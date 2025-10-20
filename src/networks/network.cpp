@@ -40,8 +40,6 @@
 #include "network.hpp"
 
 #include "kncube.hpp"
-#include "cmesh.hpp"
-#include "anynet.hpp"
 
 
 Network::Network( const Configuration &config, const string & name ) :
@@ -63,12 +61,6 @@ std::unique_ptr<Network> Network::New(const Configuration & config, const string
   } else if ( topo == "mesh" ) {
     KNCube::RegisterRoutingFunctions() ;
     n = std::make_unique<KNCube>( config, name, true );
-  } else if ( topo == "cmesh" ) {
-    CMesh::RegisterRoutingFunctions() ;
-    n = std::make_unique<CMesh>( config, name );
-  } else if ( topo == "anynet"){
-    AnyNet::RegisterRoutingFunctions() ;
-    n = std::make_unique<AnyNet>(config, name);
   } else {
     cerr << "Unknown topology: " << topo << endl;
   }
