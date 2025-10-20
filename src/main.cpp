@@ -34,6 +34,8 @@
  *
  *
  */
+#include <cstddef>
+#include <memory>
 #include <sys/time.h>
 
 #include <string>
@@ -61,7 +63,7 @@
 //////////////////////
 
  /* the current traffic manager instance */
-TrafficManager * trafficManager = NULL;
+TrafficManager* trafficManager;
 
 int GetSimTime() {
   return trafficManager->getTime();
@@ -96,17 +98,20 @@ ostream * gWatchOut;
 
 bool Simulate( BookSimConfig const & config )
 {
-  vector<Network *> net;
+  vector<std::unique_ptr<Network>> net;
+  vector<Network *> net_ptrs;
 
   int subnets = config.GetInt("subnets");
   /*To include a new network, must register the network here
    *add an else if statement with the name of the network
    */
   net.resize(subnets);
+  net_ptrs.resize(subnets);
   for (int i = 0; i < subnets; ++i) {
     ostringstream name;
     name << "network_" << i;
     net[i] = Network::New( config, name.str() );
+    net_ptrs[i] = net[i].get();
   }
 
   /*tcc and characterize are legacy
@@ -114,7 +119,8 @@ bool Simulate( BookSimConfig const & config )
    */
 
   assert(trafficManager == NULL);
-  trafficManager = TrafficManager::New( config, net ) ;
+  std::unique_ptr<TrafficManager> _trafficManager = TrafficManager::New( config, net_ptrs ) ;
+  trafficManager = _trafficManager.get();
 
   /*Start the simulation run
    */
@@ -124,7 +130,7 @@ bool Simulate( BookSimConfig const & config )
   total_time = 0.0;
   gettimeofday(&start_time, NULL);
 
-  bool result = trafficManager->Run() ;
+  bool result = _trafficManager->Run() ;
 
 
   gettimeofday(&end_time, NULL);
@@ -137,16 +143,11 @@ bool Simulate( BookSimConfig const & config )
 
     ///Power analysis
     if(config.GetInt("sim_power") > 0){
-      Power_Module pnet(net[i], config);
+      Power_Module pnet(net_ptrs[i], config);
       pnet.run();
     }
-
-    delete net[i];
   }
-
-  delete trafficManager;
-  trafficManager = NULL;
-
+  trafficManager = nullptr;
   return result;
 }
 
@@ -183,5 +184,5 @@ int main( int argc, char **argv )
   /*configure and run the simulator
    */
   bool result = Simulate( config );
-  return result ? 0 : -1;
+  return result? 0 : -1;
 }

@@ -53,6 +53,7 @@
 #include "anynet.hpp"
 #include <fstream>
 #include <sstream>
+#include <memory>
 #include <limits>
 #include <algorithm>
 //this is a hack, I can't easily get the routing talbe out of the network
@@ -152,7 +153,7 @@ void AnyNet::_BuildNet( const Configuration &config ){
     router_name << "_" <<  node ;
     _routers[node] = Router::NewRouter( config, this, router_name.str( ), 
     					node, radix, radix );
-    _timed_modules.push_back(_routers[node]);
+    _timed_modules.push_back(_routers[node].get());
     //add injeciton ejection channels
     map<int, pair<int,int> >::iterator nniter;
     for(nniter = niter->second.begin();nniter!=niter->second.end(); nniter++){
@@ -167,8 +168,8 @@ void AnyNet::_BuildNet( const Configuration &config ){
       _eject[link]->SetLatency(nniter->second.second);
       _eject_cred[link]->SetLatency(nniter->second.second);
 
-      _routers[node]->AddInputChannel( _inject[link], _inject_cred[link] );
-      _routers[node]->AddOutputChannel( _eject[link], _eject_cred[link] );
+      _routers[node]->AddInputChannel( _inject[link].get(), _inject_cred[link].get() );
+      _routers[node]->AddOutputChannel( _eject[link].get(), _eject_cred[link].get() );
     }
 
   }
@@ -196,8 +197,8 @@ void AnyNet::_BuildNet( const Configuration &config ){
       _chan[link]->SetLatency(rriter->second.second);
       _chan_cred[link]->SetLatency(rriter->second.second);
 
-      _routers[node]->AddOutputChannel( _chan[link], _chan_cred[link] );
-      _routers[other_node]->AddInputChannel( _chan[link], _chan_cred[link]);
+      _routers[node]->AddOutputChannel( _chan[link].get(), _chan_cred[link].get() );
+      _routers[other_node]->AddInputChannel( _chan[link].get(), _chan_cred[link].get() );
       channel_count++;
     }
   }

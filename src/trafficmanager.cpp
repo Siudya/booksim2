@@ -40,15 +40,15 @@
 #include "vc.hpp"
 #include "packet_reply_info.hpp"
 
-TrafficManager * TrafficManager::New(Configuration const & config,
+std::unique_ptr<TrafficManager> TrafficManager::New(Configuration const & config,
                                      vector<Network *> const & net)
 {
-    TrafficManager * result = NULL;
+    std::unique_ptr<TrafficManager> result;
     string sim_type = config.GetStr("sim_type");
     if((sim_type == "latency") || (sim_type == "throughput")) {
-        result = new TrafficManager(config, net);
+        result = std::make_unique<TrafficManager>(config, net);
     } else if(sim_type == "batch") {
-        result = new BatchTrafficManager(config, net);
+        result = std::make_unique<BatchTrafficManager>(config, net);
     } else {
         cerr << "Unknown simulation type: " << sim_type << endl;
     } 
@@ -294,8 +294,12 @@ TrafficManager::TrafficManager( const Configuration &config, const vector<Networ
     _total_sims = config.GetInt( "sim_count" );
 
     _router.resize(_subnets);
-    for (int i=0; i < _subnets; ++i) {
-        _router[i] = _net[i]->GetRouters();
+    for (size_t i = 0; i < _router.size(); ++i) {
+        const auto &src = _net[i]->GetRouters();
+        _router[i].resize(src.size());
+        for(size_t j = 0; j < src.size(); j++) {
+            _router[i][j] = src.at(j).get();
+        }
     }
 
     //seed the network

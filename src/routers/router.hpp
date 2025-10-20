@@ -30,7 +30,7 @@
 
 #include <string>
 #include <vector>
-
+#include <memory>
 #include "timed_module.hpp"
 #include "flit.hpp"
 #include "credit.hpp"
@@ -95,7 +95,7 @@ public:
 	  Module *parent, const string & name, int id,
 	  int inputs, int outputs );
 
-  static Router *NewRouter( const Configuration& config,
+  static std::unique_ptr<Router> NewRouter( const Configuration& config,
 			    Module *parent, const string & name, int id,
 			    int inputs, int outputs );
 

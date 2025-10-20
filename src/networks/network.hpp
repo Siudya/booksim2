@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <deque>
+#include <memory>
 
 #include "module.hpp"
 #include "flit.hpp"
@@ -53,16 +54,16 @@ protected:
   int _channels;
   int _classes;
 
-  vector<Router *> _routers;
+  vector<std::unique_ptr<Router>> _routers;
 
-  vector<FlitChannel *> _inject;
-  vector<CreditChannel *> _inject_cred;
+  vector<std::unique_ptr<FlitChannel>> _inject;
+  vector<std::unique_ptr<CreditChannel>> _inject_cred;
 
-  vector<FlitChannel *> _eject;
-  vector<CreditChannel *> _eject_cred;
+  vector<std::unique_ptr<FlitChannel>> _eject;
+  vector<std::unique_ptr<CreditChannel>> _eject_cred;
 
-  vector<FlitChannel *> _chan;
-  vector<CreditChannel *> _chan_cred;
+  vector<std::unique_ptr<FlitChannel>> _chan;
+  vector<std::unique_ptr<CreditChannel>> _chan_cred;
 
   deque<TimedModule *> _timed_modules;
 
@@ -73,9 +74,9 @@ protected:
 
 public:
   Network( const Configuration &config, const string & name );
-  virtual ~Network( );
+  virtual ~Network( ) = default;
 
-  static Network *New( const Configuration &config, const string & name );
+  static std::unique_ptr<Network> New( const Configuration &config, const string & name );
 
   virtual void WriteFlit( Flit *f, int source );
   virtual Flit *ReadFlit( int dest );
@@ -99,18 +100,18 @@ public:
   void DumpNodeMap( ostream & os = cout, string const & prefix = "" ) const;
 
   int NumChannels() const {return _channels;}
-  const vector<FlitChannel *> & GetInject() {return _inject;}
-  FlitChannel * GetInject(int index) {return _inject[index];}
-  const vector<CreditChannel *> & GetInjectCred() {return _inject_cred;}
-  CreditChannel * GetInjectCred(int index) {return _inject_cred[index];}
-  const vector<FlitChannel *> & GetEject(){return _eject;}
-  FlitChannel * GetEject(int index) {return _eject[index];}
-  const vector<CreditChannel *> & GetEjectCred(){return _eject_cred;}
-  CreditChannel * GetEjectCred(int index) {return _eject_cred[index];}
-  const vector<FlitChannel *> & GetChannels(){return _chan;}
-  const vector<CreditChannel *> & GetChannelsCred(){return _chan_cred;}
-  const vector<Router *> & GetRouters(){return _routers;}
-  Router * GetRouter(int index) {return _routers[index];}
+  const vector<std::unique_ptr<FlitChannel>> & GetInject() {return _inject;}
+  FlitChannel * GetInject(int index) {return _inject[index].get();}
+  const vector<std::unique_ptr<CreditChannel>> & GetInjectCred() {return _inject_cred;}
+  CreditChannel * GetInjectCred(int index) {return _inject_cred[index].get();}
+  const vector<std::unique_ptr<FlitChannel>> & GetEject(){return _eject;}
+  FlitChannel * GetEject(int index) {return _eject[index].get();}
+  const vector<std::unique_ptr<CreditChannel>> & GetEjectCred(){return _eject_cred;}
+  CreditChannel * GetEjectCred(int index) {return _eject_cred[index].get();}
+  const vector<std::unique_ptr<FlitChannel>> & GetChannels(){return _chan;}
+  const vector<std::unique_ptr<CreditChannel>> & GetChannelsCred(){return _chan_cred;}
+  const vector<std::unique_ptr<Router>> & GetRouters(){return _routers;}
+  Router * GetRouter(int index) {return _routers[index].get();}
   int NumRouters() const {return _size;}
 };
 

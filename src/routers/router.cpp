@@ -126,18 +126,18 @@ bool Router::IsFaultyOutput( int c ) const
 }
 
 /*Router constructor*/
-Router *Router::NewRouter( const Configuration& config,
+std::unique_ptr<Router> Router::NewRouter( const Configuration& config,
 			   Module *parent, const string & name, int id,
 			   int inputs, int outputs )
 {
   const string type = config.GetStr( "router" );
-  Router *r = NULL;
+  std::unique_ptr<Router> r;
   if ( type == "iq" ) {
-    r = new IQRouter( config, parent, name, id, inputs, outputs );
+    r = std::make_unique<IQRouter>( config, parent, name, id, inputs, outputs );
   } else if ( type == "event" ) {
-    r = new EventRouter( config, parent, name, id, inputs, outputs );
+    r = std::make_unique<EventRouter>( config, parent, name, id, inputs, outputs );
   } else if ( type == "chaos" ) {
-    r = new ChaosRouter( config, parent, name, id, inputs, outputs );
+    r = std::make_unique<ChaosRouter>( config, parent, name, id, inputs, outputs );
   } else {
     cerr << "Unknown router type: " << type << endl;
   }

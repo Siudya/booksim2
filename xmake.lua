@@ -100,3 +100,19 @@ target("booksim")
     add_linkdirs("$(builddir)", "$(builddir)/linux/x86_64/$(mode)")
     -- ensure static libs resolve regardless of order using linker group
     add_ldflags("-Wl,--start-group -lrouters -lnetworks -larbiters -lallocators -lpower -lcore -lparser -Wl,--end-group", {force = true})
+
+task("bs2")
+    set_menu {
+        usage = "xmake bs2 <config_file>",
+        description = "Run BookSim simulator with specified config file",
+        options = {
+            {'c', "--config-file", "kv", "meshconfig", "Config file name (without path)"}
+        }
+    }
+    on_run(function (options)
+        import("core.base.option")
+        local bin = path.join(os.projectdir(), "build", "linux", "x86_64", "release", "booksim")
+        local config_file = path.join(os.projectdir(), "runfiles", option.get("--config-file"))
+        print("%s %s", bin, config_file)
+        os.exec("%s %s", bin, config_file)
+    end)

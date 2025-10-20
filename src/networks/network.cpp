@@ -34,19 +34,14 @@
 
 #include <cassert>
 #include <sstream>
+#include <utility>
 
 #include "booksim.hpp"
 #include "network.hpp"
 
 #include "kncube.hpp"
-#include "fly.hpp"
 #include "cmesh.hpp"
-#include "flatfly_onchip.hpp"
-#include "qtree.hpp"
-#include "tree4.hpp"
-#include "fattree.hpp"
 #include "anynet.hpp"
-#include "dragonfly.hpp"
 
 
 Network::Network( const Configuration &config, const string & name ) :
@@ -58,59 +53,22 @@ Network::Network( const Configuration &config, const string & name ) :
   _classes  = config.GetInt("classes");
 }
 
-Network::~Network( )
-{
-  for ( int r = 0; r < _size; ++r ) {
-    if ( _routers[r] ) delete _routers[r];
-  }
-  for ( int s = 0; s < _nodes; ++s ) {
-    if ( _inject[s] ) delete _inject[s];
-    if ( _inject_cred[s] ) delete _inject_cred[s];
-  }
-  for ( int d = 0; d < _nodes; ++d ) {
-    if ( _eject[d] ) delete _eject[d];
-    if ( _eject_cred[d] ) delete _eject_cred[d];
-  }
-  for ( int c = 0; c < _channels; ++c ) {
-    if ( _chan[c] ) delete _chan[c];
-    if ( _chan_cred[c] ) delete _chan_cred[c];
-  }
-}
-
-Network * Network::New(const Configuration & config, const string & name)
+std::unique_ptr<Network> Network::New(const Configuration & config, const string & name)
 {
   const string topo = config.GetStr( "topology" );
-  Network * n = NULL;
+  std::unique_ptr<Network> n;
   if ( topo == "torus" ) {
     KNCube::RegisterRoutingFunctions() ;
-    n = new KNCube( config, name, false );
+    n = std::make_unique<KNCube>( config, name, false );
   } else if ( topo == "mesh" ) {
     KNCube::RegisterRoutingFunctions() ;
-    n = new KNCube( config, name, true );
+    n = std::make_unique<KNCube>( config, name, true );
   } else if ( topo == "cmesh" ) {
     CMesh::RegisterRoutingFunctions() ;
-    n = new CMesh( config, name );
-  } else if ( topo == "fly" ) {
-    KNFly::RegisterRoutingFunctions() ;
-    n = new KNFly( config, name );
-  } else if ( topo == "qtree" ) {
-    QTree::RegisterRoutingFunctions() ;
-    n = new QTree( config, name );
-  } else if ( topo == "tree4" ) {
-    Tree4::RegisterRoutingFunctions() ;
-    n = new Tree4( config, name );
-  } else if ( topo == "fattree" ) {
-    FatTree::RegisterRoutingFunctions() ;
-    n = new FatTree( config, name );
-  } else if ( topo == "flatfly" ) {
-    FlatFlyOnChip::RegisterRoutingFunctions() ;
-    n = new FlatFlyOnChip( config, name );
+    n = std::make_unique<CMesh>( config, name );
   } else if ( topo == "anynet"){
     AnyNet::RegisterRoutingFunctions() ;
-    n = new AnyNet(config, name);
-  } else if ( topo == "dragonflynew"){
-    DragonFlyNew::RegisterRoutingFunctions() ;
-    n = new DragonFlyNew(config, name);
+    n = std::make_unique<AnyNet>(config, name);
   } else {
     cerr << "Unknown topology: " << topo << endl;
   }
@@ -144,38 +102,38 @@ void Network::_Alloc( )
   for ( int s = 0; s < _nodes; ++s ) {
     ostringstream name;
     name << Name() << "_fchan_ingress" << s;
-    _inject[s] = new FlitChannel(this, name.str(), _classes);
+    _inject[s] = std::make_unique<FlitChannel>(this, name.str(), _classes);
     _inject[s]->SetSource(NULL, s);
-    _timed_modules.push_back(_inject[s]);
+    _timed_modules.push_back(_inject[s].get());
     name.str("");
     name << Name() << "_cchan_ingress" << s;
-    _inject_cred[s] = new CreditChannel(this, name.str());
-    _timed_modules.push_back(_inject_cred[s]);
+    _inject_cred[s] = std::make_unique<CreditChannel>(this, name.str());
+    _timed_modules.push_back(_inject_cred[s].get());
   }
   _eject.resize(_nodes);
   _eject_cred.resize(_nodes);
   for ( int d = 0; d < _nodes; ++d ) {
     ostringstream name;
     name << Name() << "_fchan_egress" << d;
-    _eject[d] = new FlitChannel(this, name.str(), _classes);
+    _eject[d] = std::make_unique<FlitChannel>(this, name.str(), _classes);
     _eject[d]->SetSink(NULL, d);
-    _timed_modules.push_back(_eject[d]);
+    _timed_modules.push_back(_eject[d].get());
     name.str("");
     name << Name() << "_cchan_egress" << d;
-    _eject_cred[d] = new CreditChannel(this, name.str());
-    _timed_modules.push_back(_eject_cred[d]);
+    _eject_cred[d] = std::make_unique<CreditChannel>(this, name.str());
+    _timed_modules.push_back(_eject_cred[d].get());
   }
   _chan.resize(_channels);
   _chan_cred.resize(_channels);
   for ( int c = 0; c < _channels; ++c ) {
     ostringstream name;
     name << Name() << "_fchan_" << c;
-    _chan[c] = new FlitChannel(this, name.str(), _classes);
-    _timed_modules.push_back(_chan[c]);
+    _chan[c] = std::make_unique<FlitChannel>(this, name.str(), _classes);
+    _timed_modules.push_back(_chan[c].get());
     name.str("");
     name << Name() << "_cchan_" << c;
-    _chan_cred[c] = new CreditChannel(this, name.str());
-    _timed_modules.push_back(_chan_cred[c]);
+    _chan_cred[c] = std::make_unique<CreditChannel>(this, name.str());
+    _timed_modules.push_back(_chan_cred[c].get());
   }
 }
 

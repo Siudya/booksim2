@@ -291,7 +291,7 @@ protected:
 
 public:
 
-  static TrafficManager * New(Configuration const & config, 
+  static std::unique_ptr<TrafficManager> New(Configuration const & config, 
 			      vector<Network *> const & net);
 
   TrafficManager( const Configuration &config, const vector<Network *> & net );

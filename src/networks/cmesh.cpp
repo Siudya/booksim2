@@ -144,7 +144,7 @@ void CMesh::_BuildNet( const Configuration& config ) {
 					node,
 					degree_in,
 					degree_out);
-    _timed_modules.push_back(_routers[node]);
+    _timed_modules.push_back(_routers[node].get());
     name.str("");
 
     //
@@ -166,9 +166,9 @@ void CMesh::_BuildNet( const Configuration& config ) {
 	assert( channel_vector[ link ] == false ) ;
 	channel_vector[link] = true ;
 	// Ingress Ports
-	_routers[node]->AddInputChannel(_inject[link], _inject_cred[link]);
+	_routers[node]->AddInputChannel(_inject[link].get(), _inject_cred[link].get());
 	// Egress Ports
-	_routers[node]->AddOutputChannel(_eject[link], _eject_cred[link]);
+	_routers[node]->AddOutputChannel(_eject[link].get(), _eject_cred[link].get());
 	//injeciton ejection latency is 1
 	_inject[link]->SetLatency( 1 );
 	_eject[link]->SetLatency( 1 );
@@ -240,8 +240,8 @@ void CMesh::_BuildNet( const Configuration& config ) {
       _chan[px_out]->SetLatency( 1 );
       _chan_cred[px_out]->SetLatency( 1 );
     }
-    _routers[node]->AddOutputChannel( _chan[px_out], _chan_cred[px_out] );
-    _routers[node]->AddInputChannel( _chan[px_in], _chan_cred[px_in] );
+    _routers[node]->AddOutputChannel( _chan[px_out].get(), _chan_cred[px_out].get() );
+    _routers[node]->AddInputChannel( _chan[px_in].get(), _chan_cred[px_in].get() );
     
     if(gTrace) {
       cout<<"Link "<<" "<<px_out<<" "<<px_in<<" "<<node<<" "<<_chan[px_out]->GetLatency()<<endl;
@@ -256,8 +256,8 @@ void CMesh::_BuildNet( const Configuration& config ) {
       _chan[nx_out]->SetLatency( 1 );
       _chan_cred[nx_out]->SetLatency( 1 );
     }
-    _routers[node]->AddOutputChannel( _chan[nx_out], _chan_cred[nx_out] );
-    _routers[node]->AddInputChannel( _chan[nx_in], _chan_cred[nx_in] );
+    _routers[node]->AddOutputChannel( _chan[nx_out].get(), _chan_cred[nx_out].get() );
+    _routers[node]->AddInputChannel( _chan[nx_in].get(), _chan_cred[nx_in].get() );
 
     if(gTrace){
       cout<<"Link "<<" "<<nx_out<<" "<<nx_in<<" "<<node<<" "<<_chan[nx_out]->GetLatency()<<endl;
@@ -272,8 +272,8 @@ void CMesh::_BuildNet( const Configuration& config ) {
       _chan[py_out]->SetLatency( 1 );
       _chan_cred[py_out]->SetLatency( 1 );
     }
-    _routers[node]->AddOutputChannel( _chan[py_out], _chan_cred[py_out] );
-    _routers[node]->AddInputChannel( _chan[py_in], _chan_cred[py_in] );
+    _routers[node]->AddOutputChannel( _chan[py_out].get(), _chan_cred[py_out].get() );
+    _routers[node]->AddInputChannel( _chan[py_in].get(), _chan_cred[py_in].get() );
     
     if(gTrace){
       cout<<"Link "<<" "<<py_out<<" "<<py_in<<" "<<node<<" "<<_chan[py_out]->GetLatency()<<endl;
@@ -288,8 +288,8 @@ void CMesh::_BuildNet( const Configuration& config ) {
       _chan[ny_out]->SetLatency( 1 );
       _chan_cred[ny_out]->SetLatency( 1 );
     }
-    _routers[node]->AddOutputChannel( _chan[ny_out], _chan_cred[ny_out] );
-    _routers[node]->AddInputChannel( _chan[ny_in], _chan_cred[ny_in] );    
+    _routers[node]->AddOutputChannel( _chan[ny_out].get(), _chan_cred[ny_out].get() );
+    _routers[node]->AddInputChannel( _chan[ny_in].get(), _chan_cred[ny_in].get() );    
 
     if(gTrace){
       cout<<"Link "<<" "<<ny_out<<" "<<ny_in<<" "<<node<<" "<<_chan[ny_out]->GetLatency()<<endl;
