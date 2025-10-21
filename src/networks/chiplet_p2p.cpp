@@ -1,0 +1,43 @@
+#include "booksim.hpp"
+#include "chiplet_p2p.hpp"
+#include <sstream>
+
+ChipletP2P::ChipletP2P ( const Configuration &config, const string & name):ChipletNetwork( config, name ) {
+  _ComputeSize( config );
+  _Alloc();
+  _BuildNet( config );
+}
+
+void ChipletP2P::_ComputeSize( const Configuration &config )
+{
+  _size = chip_num * chip_size;
+  _channels = 4 * _size;
+  _nodes = _size;
+}
+
+void ChipletP2P::_BuildNet( const Configuration &config )
+{
+  for(int i = 0; i < chip_num; ++i) single_chip_conn(config, i);
+
+  const int bundry_router_0 = get_node_id(0, y_len - 2, x_len - 1);
+  const int bundry_router_1 = get_node_id(1, y_len - 2, 0);
+  const int bundry_router_2 = get_node_id(1, y_len - 1, 1);
+  const int bundry_router_3 = get_node_id(2, 0, 1);
+  const int bundry_router_4 = get_node_id(2, 1, 0);
+  const int bundry_router_5 = get_node_id(3, 1, x_len - 1);
+  const int bundry_router_6 = get_node_id(3, 0, x_len - 2);
+  const int bundry_router_7 = get_node_id(0, y_len - 1, x_len - 2);
+
+  const int bundry_router_8 = get_node_id(0, y_len - 1, x_len - 1);
+  const int bundry_router_9 = get_node_id(2, 0, 0);
+  const int bundry_router_10 = get_node_id(1, y_len - 1, 0);
+  const int bundry_router_11 = get_node_id(3, 0, x_len - 1);
+
+  node_conn_2(bundry_router_0, bundry_router_1, right_channel(bundry_router_0), left_channel(bundry_router_1), 32);
+  node_conn_2(bundry_router_2, bundry_router_3, down_channel(bundry_router_1), up_channel(bundry_router_2), 32);
+  node_conn_2(bundry_router_4, bundry_router_5, left_channel(bundry_router_4), right_channel(bundry_router_5), 32);
+  node_conn_2(bundry_router_6, bundry_router_7, up_channel(bundry_router_6), down_channel(bundry_router_7), 32);
+
+  node_conn_2(bundry_router_8, bundry_router_9, right_channel(bundry_router_8), left_channel(bundry_router_9), 32);
+  node_conn_2(bundry_router_10, bundry_router_11, left_channel(bundry_router_10), right_channel(bundry_router_11), 32);
+}

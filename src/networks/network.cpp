@@ -37,6 +37,9 @@
 #include <utility>
 
 #include "booksim.hpp"
+#include "chiplet_twin.hpp"
+#include "chiplet_mesh.hpp"
+#include "chiplet_p2p.hpp"
 #include "network.hpp"
 
 #include "kncube.hpp"
@@ -61,6 +64,12 @@ std::unique_ptr<Network> Network::New(const Configuration & config, const string
   } else if ( topo == "mesh" ) {
     KNCube::RegisterRoutingFunctions() ;
     n = std::make_unique<KNCube>( config, name, true );
+  } else if ( topo == "chiplet_twin" ) {
+    n = std::make_unique<ChipletTwin>( config, name);
+  } else if ( topo == "chiplet_mesh" ) {
+    n = std::make_unique<ChipletMesh>( config, name);
+  } else if ( topo == "chiplet_p2p" ) {
+    n = std::make_unique<ChipletP2P>( config, name);
   } else {
     cerr << "Unknown topology: " << topo << endl;
   }

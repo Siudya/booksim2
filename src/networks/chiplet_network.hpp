@@ -28,6 +28,7 @@ class ChipletNetwork : public Network {
   int down_channel(int node_id);
   ChipletNetwork ( const Configuration &config, const string & name);
   void node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat);
+  void node_conn_2(int n0, int n1, int n0_out_chn, int n1_out_chn, int lat);
 };
 
 #endif // _CHIPLET_NETWORK_HPP_

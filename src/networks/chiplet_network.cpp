@@ -66,6 +66,22 @@ void ChipletNetwork::node_conn(int node, int in_chn, int out_chn, int in_lat, in
   _chan_cred[out_chn]->SetLatency( out_lat );
 }
 
+void ChipletNetwork::node_conn_2(int n0, int n1, int n0_out_chn, int n1_out_chn, int lat) {
+  // n0 -> n1
+  _routers[n0]->AddOutputChannel( _chan[n0_out_chn].get(), _chan_cred[n0_out_chn].get() );
+  _chan[n0_out_chn]->SetLatency( lat );
+  _chan_cred[n0_out_chn]->SetLatency( lat );
+
+  _routers[n1]->AddInputChannel( _chan[n0_out_chn].get(), _chan_cred[n0_out_chn].get() );
+
+  // n1 -> n0
+  _routers[n1]->AddOutputChannel( _chan[n1_out_chn].get(), _chan_cred[n1_out_chn].get() );
+  _chan[n1_out_chn]->SetLatency( lat );
+  _chan_cred[n1_out_chn]->SetLatency( lat );
+
+  _routers[n0]->AddInputChannel( _chan[n1_out_chn].get(), _chan_cred[n1_out_chn].get() );
+}
+
 void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) {
   int node = chip_id * chip_size;
 
