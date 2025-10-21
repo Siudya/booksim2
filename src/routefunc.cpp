@@ -65,143 +65,6 @@ int gWriteReqBeginVC, gWriteReqEndVC;
 int gReadReplyBeginVC, gReadReplyEndVC;
 int gWriteReplyBeginVC, gWriteReplyEndVC;
 
-// ============================================================
-//  Mesh - adatpive XY,YX Routing 
-//         pick xy or yx min routing adaptively at the source router
-// ===
-
-int dor_next_mesh( int cur, int dest, bool descending = false );
-
-void adaptive_xy_yx_mesh( const Router *r, const Flit *f, 
-		 int in_channel, OutputSet *outputs, bool inject )
-{
-  int vcBegin = 0, vcEnd = gNumVCs-1;
-  if ( f->type == Flit::READ_REQUEST ) {
-    vcBegin = gReadReqBeginVC;
-    vcEnd = gReadReqEndVC;
-  } else if ( f->type == Flit::WRITE_REQUEST ) {
-    vcBegin = gWriteReqBeginVC;
-    vcEnd = gWriteReqEndVC;
-  } else if ( f->type ==  Flit::READ_REPLY ) {
-    vcBegin = gReadReplyBeginVC;
-    vcEnd = gReadReplyEndVC;
-  } else if ( f->type ==  Flit::WRITE_REPLY ) {
-    vcBegin = gWriteReplyBeginVC;
-    vcEnd = gWriteReplyEndVC;
-  }
-  assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
-
-  int out_port;
-
-  if(inject) {
-
-    out_port = -1;
-
-  } else if(r->GetID() == f->dest) {
-
-    // at destination router, we don't need to separate VCs by dim order
-    out_port = 2*gN;
-
-  } else {
-
-    //each class must have at least 2 vcs assigned or else xy_yx will deadlock
-    int const available_vcs = (vcEnd - vcBegin + 1) / 2;
-    assert(available_vcs > 0);
-    
-    int out_port_xy = dor_next_mesh( r->GetID(), f->dest, false );
-    int out_port_yx = dor_next_mesh( r->GetID(), f->dest, true );
-
-    // Route order (XY or YX) determined when packet is injected
-    //  into the network, adaptively
-    bool x_then_y;
-    if(in_channel < 2*gN){
-      x_then_y =  (f->vc < (vcBegin + available_vcs));
-    } else {
-      int credit_xy = r->GetUsedCredit(out_port_xy);
-      int credit_yx = r->GetUsedCredit(out_port_yx);
-      if(credit_xy > credit_yx) {
-	x_then_y = false;
-      } else if(credit_xy < credit_yx) {
-	x_then_y = true;
-      } else {
-	x_then_y = (RandomInt(1) > 0);
-      }
-    }
-    
-    if(x_then_y) {
-      out_port = out_port_xy;
-      vcEnd -= available_vcs;
-    } else {
-      out_port = out_port_yx;
-      vcBegin += available_vcs;
-    }
-
-  }
-
-  outputs->Clear();
-
-  outputs->AddRange( out_port , vcBegin, vcEnd );
-  
-}
-
-void xy_yx_mesh( const Router *r, const Flit *f, 
-		 int in_channel, OutputSet *outputs, bool inject )
-{
-  int vcBegin = 0, vcEnd = gNumVCs-1;
-  if ( f->type == Flit::READ_REQUEST ) {
-    vcBegin = gReadReqBeginVC;
-    vcEnd = gReadReqEndVC;
-  } else if ( f->type == Flit::WRITE_REQUEST ) {
-    vcBegin = gWriteReqBeginVC;
-    vcEnd = gWriteReqEndVC;
-  } else if ( f->type ==  Flit::READ_REPLY ) {
-    vcBegin = gReadReplyBeginVC;
-    vcEnd = gReadReplyEndVC;
-  } else if ( f->type ==  Flit::WRITE_REPLY ) {
-    vcBegin = gWriteReplyBeginVC;
-    vcEnd = gWriteReplyEndVC;
-  }
-  assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
-
-  int out_port;
-
-  if(inject) {
-
-    out_port = -1;
-
-  } else if(r->GetID() == f->dest) {
-
-    // at destination router, we don't need to separate VCs by dim order
-    out_port = 2*gN;
-
-  } else {
-
-    //each class must have at least 2 vcs assigned or else xy_yx will deadlock
-    int const available_vcs = (vcEnd - vcBegin + 1) / 2;
-    assert(available_vcs > 0);
-
-    // Route order (XY or YX) determined when packet is injected
-    //  into the network
-    bool x_then_y = ((in_channel < 2*gN) ?
-		     (f->vc < (vcBegin + available_vcs)) :
-		     (RandomInt(1) > 0));
-
-    if(x_then_y) {
-      out_port = dor_next_mesh( r->GetID(), f->dest, false );
-      vcEnd -= available_vcs;
-    } else {
-      out_port = dor_next_mesh( r->GetID(), f->dest, true );
-      vcBegin += available_vcs;
-    }
-
-  }
-
-  outputs->Clear();
-
-  outputs->AddRange( out_port , vcBegin, vcEnd );
-  
-}
-
 //
 // End Balfour-Schultz
 //=============================================================
@@ -243,7 +106,7 @@ int dor_next_mesh( int cur, int dest, bool descending )
 
 void dim_order_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
 {
-  int out_port = inject ? -1 : dor_next_mesh( r->GetID( ), f->dest );
+  int out_port = inject ? -1 : dor_next_mesh( r->GetID( ), f->dest, false );
   
   int vcBegin = 0, vcEnd = gNumVCs-1;
   if ( f->type == Flit::READ_REQUEST ) {
@@ -326,10 +189,9 @@ void InitializeRoutingMap( const Configuration & config )
   // ===================================================
   // Balfour-Schultz
   gRoutingFunctionMap["dor_mesh"]            = &dim_order_mesh;
-  gRoutingFunctionMap["xy_yx_mesh"]          = &xy_yx_mesh;
-  gRoutingFunctionMap["adaptive_xy_yx_mesh"]          = &adaptive_xy_yx_mesh;
+  gRoutingFunctionMap["dim_order_mesh"]  = &dim_order_mesh;
   // End Balfour-Schultz
   // ===================================================
 
-  gRoutingFunctionMap["dim_order_mesh"]  = &dim_order_mesh;
+  
 }

@@ -33,11 +33,11 @@ void ChipletP2P::_BuildNet( const Configuration &config )
   const int bundry_router_10 = get_node_id(1, y_len - 1, 0);
   const int bundry_router_11 = get_node_id(3, 0, x_len - 1);
 
-  node_conn_2(bundry_router_0, bundry_router_1, right_channel(bundry_router_0), left_channel(bundry_router_1), 32);
-  node_conn_2(bundry_router_2, bundry_router_3, down_channel(bundry_router_1), up_channel(bundry_router_2), 32);
-  node_conn_2(bundry_router_4, bundry_router_5, left_channel(bundry_router_4), right_channel(bundry_router_5), 32);
-  node_conn_2(bundry_router_6, bundry_router_7, up_channel(bundry_router_6), down_channel(bundry_router_7), 32);
+  node_conn_2(bundry_router_0, bundry_router_1, right_port, left_port, 32);
+  node_conn_2(bundry_router_2, bundry_router_3, down_port, up_port, 32);
+  node_conn_2(bundry_router_4, bundry_router_5, left_port, right_port, 32);
+  node_conn_2(bundry_router_6, bundry_router_7, up_port, down_port, 32);
 
-  node_conn_2(bundry_router_8, bundry_router_9, right_channel(bundry_router_8), left_channel(bundry_router_9), 32);
-  node_conn_2(bundry_router_10, bundry_router_11, left_channel(bundry_router_10), right_channel(bundry_router_11), 32);
+  node_conn_2(bundry_router_8, bundry_router_9, right_port, left_port, 32);
+  node_conn_2(bundry_router_10, bundry_router_11, left_port, right_port, 32);
 }

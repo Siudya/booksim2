@@ -40,22 +40,6 @@ int ChipletNetwork::down_node(int node_id) {
   return get_node_id(self_chip, down_node_y, down_node_x);
 }
 
-int ChipletNetwork::left_channel(int node_id) {
-  return node_id * 4 + 1;
-}
-
-int ChipletNetwork::right_channel(int node_id) {
-  return node_id * 4 + 0;
-}
-
-int ChipletNetwork::up_channel(int node_id) {
-  return node_id * 4 + 3;
-}
-
-int ChipletNetwork::down_channel(int node_id) {
-  return node_id * 4 + 2;
-}
-
 void ChipletNetwork::node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat) {
   _routers[node]->AddInputChannel( _chan[in_chn].get(), _chan_cred[in_chn].get() );
   _chan[in_chn]->SetLatency( in_lat );
@@ -66,20 +50,18 @@ void ChipletNetwork::node_conn(int node, int in_chn, int out_chn, int in_lat, in
   _chan_cred[out_chn]->SetLatency( out_lat );
 }
 
-void ChipletNetwork::node_conn_2(int n0, int n1, int n0_out_chn, int n1_out_chn, int lat) {
-  // n0 -> n1
-  _routers[n0]->AddOutputChannel( _chan[n0_out_chn].get(), _chan_cred[n0_out_chn].get() );
-  _chan[n0_out_chn]->SetLatency( lat );
-  _chan_cred[n0_out_chn]->SetLatency( lat );
+void ChipletNetwork::node_conn_2(int n0, int n1, int n0_port, int n1_port, int lat) {
 
-  _routers[n1]->AddInputChannel( _chan[n0_out_chn].get(), _chan_cred[n0_out_chn].get() );
+  auto r0 = _routers.at(n0).get();
+  auto r1 = _routers.at(n1).get();
 
-  // n1 -> n0
-  _routers[n1]->AddOutputChannel( _chan[n1_out_chn].get(), _chan_cred[n1_out_chn].get() );
-  _chan[n1_out_chn]->SetLatency( lat );
-  _chan_cred[n1_out_chn]->SetLatency( lat );
+  r0->AlterInputChannel(n0_port, r1->GetOutputChannel(n1_port), r1->GetOutputCreditChannel(n1_port));
+  r1->AlterInputChannel(n1_port, r0->GetOutputChannel(n0_port), r0->GetOutputCreditChannel(n0_port));
 
-  _routers[n0]->AddInputChannel( _chan[n1_out_chn].get(), _chan_cred[n1_out_chn].get() );
+  r0->GetOutputChannel(n0_port)->SetLatency(lat);
+  r1->GetOutputChannel(n1_port)->SetLatency(lat);
+  r0->GetOutputCreditChannel(n0_port)->SetLatency(lat);
+  r1->GetOutputCreditChannel(n1_port)->SetLatency(lat);
 }
 
 void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) {
@@ -127,19 +109,18 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
     router_name << "router";
     router_name << '_' << chip_id << '_' << y << '_' << x << '_' << i;
 
-    _routers[node] = Router::NewRouter(
-      config, this, router_name.str( ),
-      node, 4, 5
-    );
-    _timed_modules.push_back(_routers[node].get());
+    _routers[i] = Router::NewRouter( config, this, router_name.str( ),i, 4, 5);
+    _timed_modules.push_back(_routers[i].get());
 
     // Do not connect boundary edges
-    if(x != 0)         node_conn(node, left_input, left_output, 1, 1);
-    if(x != x_len - 1) node_conn(node, right_input, right_output, 1, 1);
-    if(y != 0)         node_conn(node, up_input, up_output, 1, 1);
-    if(y != y_len - 1) node_conn(node, down_input, down_output, 1, 1);
+    // right:0 left:1 down:2 up:3
+    node_conn(i, right_input, right_output, 1, 1);
+    node_conn(i, left_input, left_output, 1, 1);
+    node_conn(i, down_input, down_output, 1, 1);
+    node_conn(i, up_input, up_output, 1, 1);
 
     //injection and ejection channel, always 1 latency
+    // local: 4
     _routers[i]->AddInputChannel( _inject[i].get(), _inject_cred[i].get() );
     _routers[i]->AddOutputChannel( _eject[i].get(), _eject_cred[i].get() );
     _inject[i]->SetLatency( 1 );

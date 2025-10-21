@@ -101,6 +101,8 @@ public:
 
   virtual void AddInputChannel( FlitChannel *channel, CreditChannel *backchannel );
   virtual void AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel );
+  virtual void AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel );
+  virtual void AlterOutputChannel( int port,  FlitChannel *channel, CreditChannel *backchannel );
  
   inline FlitChannel * GetInputChannel( int input ) const {
     assert((input >= 0) && (input < _inputs));
@@ -109,6 +111,14 @@ public:
   inline FlitChannel * GetOutputChannel( int output ) const {
     assert((output >= 0) && (output < _outputs));
     return _output_channels[output];
+  }
+  inline CreditChannel * GetInputCreditChannel( int input ) const {
+    assert((input >= 0) && (input < _inputs));
+    return _input_credits[input];
+  }
+  inline CreditChannel * GetOutputCreditChannel( int output ) const {
+    assert((output >= 0) && (output < _outputs));
+    return _output_credits[output];
   }
 
   virtual void ReadInputs( ) = 0;

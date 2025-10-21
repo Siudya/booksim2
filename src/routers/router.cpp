@@ -102,6 +102,20 @@ void Router::AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel 
   channel->SetSource( this, _output_channels.size() - 1 ) ;
 }
 
+void Router::AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel )
+{
+  _input_channels.at(port) = channel;
+  _input_credits.at(port) = backchannel;
+  channel->SetSink( this, port ) ;
+}
+
+void Router::AlterOutputChannel( int port, FlitChannel *channel, CreditChannel *backchannel )
+{
+  _output_channels.at(port) = channel;
+  _output_credits.at(port) = backchannel;
+  channel->SetSource( this, port ) ;
+}
+
 void Router::Evaluate( )
 {
   _partial_internal_cycles += _internal_speedup;
