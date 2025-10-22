@@ -50,13 +50,13 @@ void ChipletNetwork::node_conn(int node, int in_chn, int out_chn, int in_lat, in
   _chan_cred[out_chn]->SetLatency( out_lat );
 }
 
-void ChipletNetwork::node_conn_2(int n0, int n1, int n0_port, int n1_port, int lat) {
+void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat) {
 
   auto r0 = _routers.at(n0).get();
   auto r1 = _routers.at(n1).get();
 
-  r0->AlterInputChannel(n0_port, r1->GetOutputChannel(n1_port), r1->GetOutputCreditChannel(n1_port));
-  r1->AlterInputChannel(n1_port, r0->GetOutputChannel(n0_port), r0->GetOutputCreditChannel(n0_port));
+  r0->AlterInputChannel(n0_port, r1->GetOutputChannel(n1_port), r1->GetOutputCreditChannel(n1_port), true);
+  r1->AlterInputChannel(n1_port, r0->GetOutputChannel(n0_port), r0->GetOutputCreditChannel(n0_port), true);
 
   r0->GetOutputChannel(n0_port)->SetLatency(lat);
   r1->GetOutputChannel(n1_port)->SetLatency(lat);

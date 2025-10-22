@@ -34,7 +34,9 @@ class ChipletNetwork : public Network {
   ChipletNetwork ( const Configuration &config, const string & name);
   void single_chip_conn( const Configuration &config, int chip_id);
   void node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat);
-  void node_conn_2(int n0, int n1, int n0_out_chn, int n1_out_chn, int lat);
+  void node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat);
+  virtual const int get_boundary_router(const int inject_node_id, const int dest_node_id) = 0;
+  virtual const bool is_boundary_router(const int node_id) = 0;
 };
 
 #endif // _CHIPLET_NETWORK_HPP_

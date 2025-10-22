@@ -59,7 +59,7 @@ Router::Router( const Configuration& config,
 		Module *parent, const string & name, int id,
 		int inputs, int outputs ) :
 TimedModule( parent, name ), _id( id ), _inputs( inputs ), _outputs( outputs ),
-   _partial_internal_cycles(0.0)
+   _partial_internal_cycles(0.0), _d2d_port(-1)
 {
   _crossbar_delay   = ( config.GetInt( "st_prepare_delay" ) + 
 			config.GetInt( "st_final_delay" ) );
@@ -68,6 +68,7 @@ TimedModule( parent, name ), _id( id ), _inputs( inputs ), _outputs( outputs ),
   _output_speedup   = config.GetInt( "output_speedup" );
   _internal_speedup = config.GetFloat( "internal_speedup" );
   _classes          = config.GetInt( "classes" );
+  _network          = parent;
 
 #ifdef TRACK_FLOWS
   _received_flits.resize(_classes, vector<int>(_inputs, 0));
@@ -87,33 +88,37 @@ TimedModule( parent, name ), _id( id ), _inputs( inputs ), _outputs( outputs ),
 
 }
 
-void Router::AddInputChannel( FlitChannel *channel, CreditChannel *backchannel )
+void Router::AddInputChannel( FlitChannel *channel, CreditChannel *backchannel, bool d2d )
 {
   _input_channels.push_back( channel );
   _input_credits.push_back( backchannel );
   channel->SetSink( this, _input_channels.size() - 1 ) ;
+  if(d2d) _d2d_port = _input_channels.size() - 1;
 }
 
-void Router::AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel )
+void Router::AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel, bool d2d )
 {
   _output_channels.push_back( channel );
   _output_credits.push_back( backchannel );
   _channel_faults.push_back( false );
   channel->SetSource( this, _output_channels.size() - 1 ) ;
+  if(d2d) _d2d_port = _output_channels.size() - 1;
 }
 
-void Router::AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel )
+void Router::AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel, bool d2d)
 {
   _input_channels.at(port) = channel;
   _input_credits.at(port) = backchannel;
   channel->SetSink( this, port ) ;
+  if(d2d) _d2d_port = port;
 }
 
-void Router::AlterOutputChannel( int port, FlitChannel *channel, CreditChannel *backchannel )
+void Router::AlterOutputChannel( int port, FlitChannel *channel, CreditChannel *backchannel, bool d2d)
 {
   _output_channels.at(port) = channel;
   _output_credits.at(port) = backchannel;
   channel->SetSource( this, port ) ;
+  if(d2d) _d2d_port = port;
 }
 
 void Router::Evaluate( )

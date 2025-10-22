@@ -19,25 +19,88 @@ void ChipletP2P::_BuildNet( const Configuration &config )
 {
   for(int i = 0; i < chip_num; ++i) single_chip_conn(config, i);
 
-  const int bundry_router_0 = get_node_id(0, y_len - 2, x_len - 1);
-  const int bundry_router_1 = get_node_id(1, y_len - 2, 0);
-  const int bundry_router_2 = get_node_id(1, y_len - 1, 1);
-  const int bundry_router_3 = get_node_id(2, 0, 1);
-  const int bundry_router_4 = get_node_id(2, 1, 0);
-  const int bundry_router_5 = get_node_id(3, 1, x_len - 1);
-  const int bundry_router_6 = get_node_id(3, 0, x_len - 2);
-  const int bundry_router_7 = get_node_id(0, y_len - 1, x_len - 2);
+  bundry_router_0 = get_node_id(0, y_len - 2, x_len - 1);
+  bundry_router_1 = get_node_id(1, y_len - 2, 0);
+  bundry_router_2 = get_node_id(1, y_len - 1, 1);
+  bundry_router_3 = get_node_id(2, 0, 1);
+  bundry_router_4 = get_node_id(2, 1, 0);
+  bundry_router_5 = get_node_id(3, 1, x_len - 1);
+  bundry_router_6 = get_node_id(3, 0, x_len - 2);
+  bundry_router_7 = get_node_id(0, y_len - 1, x_len - 2);
 
-  const int bundry_router_8 = get_node_id(0, y_len - 1, x_len - 1);
-  const int bundry_router_9 = get_node_id(2, 0, 0);
-  const int bundry_router_10 = get_node_id(1, y_len - 1, 0);
-  const int bundry_router_11 = get_node_id(3, 0, x_len - 1);
+  bundry_router_8 = get_node_id(0, y_len - 1, x_len - 1);
+  bundry_router_9 = get_node_id(2, 0, 0);
+  bundry_router_10 = get_node_id(1, y_len - 1, 0);
+  bundry_router_11 = get_node_id(3, 0, x_len - 1);
 
-  node_conn_2(bundry_router_0, bundry_router_1, right_port, left_port, 32);
-  node_conn_2(bundry_router_2, bundry_router_3, down_port, up_port, 32);
-  node_conn_2(bundry_router_4, bundry_router_5, left_port, right_port, 32);
-  node_conn_2(bundry_router_6, bundry_router_7, up_port, down_port, 32);
+  node_conn_d2d(bundry_router_0, bundry_router_1, right_port, left_port, 32);
+  node_conn_d2d(bundry_router_2, bundry_router_3, down_port, up_port, 32);
+  node_conn_d2d(bundry_router_4, bundry_router_5, left_port, right_port, 32);
+  node_conn_d2d(bundry_router_6, bundry_router_7, up_port, down_port, 32);
 
-  node_conn_2(bundry_router_8, bundry_router_9, right_port, left_port, 32);
-  node_conn_2(bundry_router_10, bundry_router_11, left_port, right_port, 32);
+  node_conn_d2d(bundry_router_8, bundry_router_9, right_port, left_port, 32);
+  node_conn_d2d(bundry_router_10, bundry_router_11, left_port, right_port, 32);
+}
+
+const int ChipletP2P::get_boundary_router(const int inject_node_id, const int dest_node_id) {
+  const int inj_chip_id = get_chip(inject_node_id);
+  const int dst_chip_id = get_chip(dest_node_id);
+  assert(inj_chip_id >= 0 && inj_chip_id < chip_num);
+  assert(dst_chip_id >= 0 && dst_chip_id < chip_num);
+  assert(inj_chip_id != dst_chip_id);
+  if(inj_chip_id == 0) {
+    if(dst_chip_id == 1) {
+      return bundry_router_0;
+    } else if(dst_chip_id == 2) {
+      return bundry_router_8;
+    } else if(dst_chip_id == 3) {
+      return bundry_router_7;
+    } else {
+      assert(false);
+      return -1;
+    }
+  } else if(inj_chip_id == 1) {
+    if(dst_chip_id == 0) {
+      return bundry_router_1;
+    } else if(dst_chip_id == 2) {
+      return bundry_router_2;
+    } else if(dst_chip_id == 3) {
+      return bundry_router_10;
+    } else {
+      assert(false);
+      return -1;
+    }
+  } else if(inj_chip_id == 2) {
+    if(dst_chip_id == 0) {
+      return bundry_router_9;
+    } else if(dst_chip_id == 1) {
+      return bundry_router_3;
+    } else if(dst_chip_id == 3) {
+      return bundry_router_4;
+    } else {
+      assert(false);
+      return -1;
+    }
+  } else if(inj_chip_id == 3) {
+    if(dst_chip_id == 0) {
+      return bundry_router_6;
+    } else if(dst_chip_id == 1) {
+      return bundry_router_11;
+    } else if(dst_chip_id == 2) {
+      return bundry_router_5;
+    } else {
+      assert(false);
+      return -1;
+    }
+  }
+  assert(false);
+  return -1;
+}
+
+const bool ChipletP2P::is_boundary_router(const int node_id) {
+  if(node_id == bundry_router_0 || node_id == bundry_router_1 || node_id == bundry_router_2 || node_id == bundry_router_3 || node_id == bundry_router_4 || node_id == bundry_router_5 || node_id == bundry_router_6 || node_id == bundry_router_7 || node_id == bundry_router_8 || node_id == bundry_router_9 || node_id == bundry_router_10 || node_id == bundry_router_11) {
+    return true;
+  } else {
+    return false;
+  }
 }

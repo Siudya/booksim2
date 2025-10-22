@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <stack>
+#include <string>
 
 #include "booksim.hpp"
 #include "outputset.hpp"
@@ -80,10 +81,18 @@ public:
   // Fields for arbitrary data
   void* data ;
 
+  // Chiplet traffic type
+  enum TrafficType { LOCAL = 0, OUTBOUND = 1, INBOUND = 2, TRANSIT = 3 };
+  mutable TrafficType traffic_type;  // Traffic type for chiplet networks
+  mutable int loc_dest;              // Local destination within current chiplet
+
   // Lookahead route info
   OutputSet la_route_set;
 
   void Reset();
+
+  // Helper function to get traffic type string representation
+  static std::string GetTrafficTypeString(TrafficType type);
 
   static Flit * New();
   void Free();

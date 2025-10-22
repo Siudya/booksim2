@@ -45,6 +45,7 @@
 #include "kncube.hpp"
 #include "random_utils.hpp"
 #include "misc_utils.hpp"
+#include "chiplet_network.hpp"
 
 
 
@@ -142,6 +143,109 @@ void dim_order_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *
 }
 
 //=============================================================
+// Helper function for ChipletTwin routing
+int dor_chiplet_port_decision(const Router *r, const Flit *f) {
+  int cur = r->GetID();
+  int dst = f->dest;
+  int loc_dst = f->loc_dest;
+
+  int cur_x = ChipletNetwork::get_x(cur);
+  int cur_y = ChipletNetwork::get_y(cur);
+  int dest_x = ChipletNetwork::get_x(loc_dst);
+  int dest_y = ChipletNetwork::get_y(loc_dst);
+
+  if (cur == dst) {
+    return ChipletNetwork::local_port;
+  } else if(cur == loc_dst) {
+    assert(r->IsBoundaryRouter());
+    return r->GetD2DPort();
+  } else if(cur_x != dest_x) {
+    return (cur_x < dest_x) ? ChipletNetwork::right_port : ChipletNetwork::left_port;
+  } else if(cur_y != dest_y) {
+    return (cur_y < dest_y) ? ChipletNetwork::down_port : ChipletNetwork::up_port;
+  } else {
+    assert(false);
+    return -1;
+  }
+}
+
+// Call this function when flit crossing chiplet boundary or inject to the network
+void set_traffic_type(const Router *r, const Flit *f) {
+  const int cur = r->GetID();
+  const int src = f->src;
+  const int dst = f->dest;
+  const int src_chip = ChipletNetwork::get_chip(src);
+  const int cur_chip = ChipletNetwork::get_chip(cur);
+  const int dst_chip = ChipletNetwork::get_chip(dst);
+  auto network = dynamic_cast<ChipletNetwork*>(r->GetNetwork());
+
+  if(src_chip == cur_chip && src_chip == dst_chip) {
+    f->traffic_type = Flit::LOCAL;
+    f->loc_dest = dst;
+  } else if(src_chip != cur_chip && dst_chip == cur_chip) {
+    f->traffic_type = Flit::INBOUND;
+    f->loc_dest = dst;
+  } else if(src_chip != cur_chip && dst_chip != cur_chip) {
+    f->traffic_type = Flit::TRANSIT;
+    f->loc_dest = network->get_boundary_router(cur, dst);
+  } else if(src_chip == cur_chip && cur_chip != dst_chip) {
+    f->traffic_type = Flit::OUTBOUND;
+    f->loc_dest = network->get_boundary_router(cur, dst);
+  } else {
+    assert(false);
+    f->traffic_type = Flit::LOCAL;
+    f->loc_dest = dst;
+  }
+}
+
+void dor_chiplet_twin(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
+  int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
+  if(inject || (r->IsBoundaryRouter() && r->GetD2DPort() == in_channel)) set_traffic_type(r, f);
+  
+  int vcBegin = 0, vcEnd = gNumVCs-1;
+  if (f->type == Flit::READ_REQUEST) {
+    vcBegin = gReadReqBeginVC;
+    vcEnd = gReadReqEndVC;
+  } else if (f->type == Flit::WRITE_REQUEST) {
+    vcBegin = gWriteReqBeginVC;
+    vcEnd = gWriteReqEndVC;
+  } else if (f->type == Flit::READ_REPLY) {
+    vcBegin = gReadReplyBeginVC;
+    vcEnd = gReadReplyEndVC;
+  } else if (f->type == Flit::WRITE_REPLY) {
+    vcBegin = gWriteReplyBeginVC;
+    vcEnd = gWriteReplyEndVC;
+  }
+  assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+
+  if (!inject && f->watch) {
+    *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
+               << "Adding VC range [" 
+               << vcBegin << "," 
+               << vcEnd << "]"
+               << " at output port " << out_port
+               << " for flit " << f->id
+               << " (input port " << in_channel
+               << ", destination " << f->dest << ")"
+               << " [Traffic: " << Flit::GetTrafficTypeString(f->traffic_type) << "]"
+               << "." << endl;
+  }
+  
+  outputs->Clear();
+  outputs->AddRange(out_port, vcBegin, vcEnd);
+}
+
+//=============================================================
+
+void dor_chiplet_mesh(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
+  return dor_chiplet_twin(r, f, in_channel, outputs, inject);
+}
+
+void dor_chiplet_p2p(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
+  return dor_chiplet_twin(r, f, in_channel, outputs, inject);
+}
+
+//=============================================================
 
 void InitializeRoutingMap( const Configuration & config )
 {
@@ -191,6 +295,13 @@ void InitializeRoutingMap( const Configuration & config )
   gRoutingFunctionMap["dor_mesh"]            = &dim_order_mesh;
   gRoutingFunctionMap["dim_order_mesh"]  = &dim_order_mesh;
   // End Balfour-Schultz
+  // ===================================================
+  
+  // ===================================================
+  // Chiplet routing functions
+  gRoutingFunctionMap["dor_chiplet_twin"] = &dor_chiplet_twin;
+  gRoutingFunctionMap["dor_chiplet_mesh"] = &dor_chiplet_mesh;
+  gRoutingFunctionMap["dor_chiplet_p2p"] = &dor_chiplet_p2p;
   // ===================================================
 
   

@@ -65,12 +65,16 @@ protected:
 
   int _crossbar_delay;
   int _credit_delay;
+
+  int _d2d_port;
   
   vector<FlitChannel *>   _input_channels;
   vector<CreditChannel *> _input_credits;
   vector<FlitChannel *>   _output_channels;
   vector<CreditChannel *> _output_credits;
   vector<bool>            _channel_faults;
+  
+  Module * _network;
 
 #ifdef TRACK_FLOWS
   vector<vector<int> > _received_flits;
@@ -99,11 +103,15 @@ public:
 			    Module *parent, const string & name, int id,
 			    int inputs, int outputs );
 
-  virtual void AddInputChannel( FlitChannel *channel, CreditChannel *backchannel );
-  virtual void AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel );
-  virtual void AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel );
-  virtual void AlterOutputChannel( int port,  FlitChannel *channel, CreditChannel *backchannel );
- 
+  virtual void AddInputChannel( FlitChannel *channel, CreditChannel *backchannel, bool d2d = false  );
+  virtual void AddOutputChannel( FlitChannel *channel, CreditChannel *backchannel, bool d2d = false  );
+  virtual void AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
+  virtual void AlterOutputChannel( int port,  FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
+  
+  inline const int GetD2DPort() const { return _d2d_port; }
+  inline const bool IsBoundaryRouter() const { return _d2d_port != -1; }
+  inline Module * GetNetwork() const { return _network; }
+
   inline FlitChannel * GetInputChannel( int input ) const {
     assert((input >= 0) && (input < _inputs));
     return _input_channels[input];

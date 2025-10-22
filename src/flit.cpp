@@ -49,7 +49,7 @@ ostream& operator<<( ostream& os, const Flit& f )
      << " Tail: " << f.tail << endl;
   os << "  Source: " << f.src << "  Dest: " << f.dest << " Intm: "<<f.intm<<endl;
   os << "  Creation time: " << f.ctime << " Injection time: " << f.itime << " Arrival time: " << f.atime << " Phase: "<<f.ph<< endl;
-  os << "  VC: " << f.vc << endl;
+  os << "  VC: " << f.vc << " Traffic: " << Flit::GetTrafficTypeString(f.traffic_type) << " Local Dest: " << f.loc_dest << endl;
   return os;
 }
 
@@ -80,7 +80,19 @@ void Flit::Reset()
   intm =-1;
   ph = -1;
   data = 0;
+  traffic_type = LOCAL;
+  loc_dest = -1;
 }  
+
+std::string Flit::GetTrafficTypeString(TrafficType type) {
+  switch (type) {
+    case LOCAL:    return "LOCAL";
+    case OUTBOUND: return "OUTBOUND";
+    case INBOUND:  return "INBOUND";
+    case TRANSIT:  return "TRANSIT";
+    default:       return "UNKNOWN";
+  }
+}
 
 Flit * Flit::New() {
   Flit * f;
