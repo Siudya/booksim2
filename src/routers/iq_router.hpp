@@ -156,7 +156,7 @@ public:
   
   virtual ~IQRouter( );
   
-  virtual void AddOutputChannel(FlitChannel * channel, CreditChannel * backchannel);
+  virtual void AddOutputChannel(FlitChannel * channel, CreditChannel * backchannel, bool d2d);
 
   virtual void ReadInputs( );
   virtual void WriteOutputs( );

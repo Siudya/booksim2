@@ -208,12 +208,12 @@ IQRouter::~IQRouter( )
   delete _switchMonitor;
 }
   
-void IQRouter::AddOutputChannel(FlitChannel * channel, CreditChannel * backchannel)
+void IQRouter::AddOutputChannel(FlitChannel * channel, CreditChannel * backchannel, bool d2d)
 {
   int alloc_delay = _speculative ? max(_vc_alloc_delay, _sw_alloc_delay) : (_vc_alloc_delay + _sw_alloc_delay);
   int min_latency = 1 + _crossbar_delay + channel->GetLatency() + _routing_delay + alloc_delay + backchannel->GetLatency()  + _credit_delay;
   _next_buf[_output_channels.size()]->SetMinLatency(min_latency);
-  Router::AddOutputChannel(channel, backchannel);
+  Router::AddOutputChannel(channel, backchannel, d2d);
 }
 
 void IQRouter::ReadInputs( )
