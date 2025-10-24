@@ -29,14 +29,14 @@
 // Flow control
 //
 
-num_vcs     = 16;
-vc_buf_size = 8;
+num_vcs     = 2;
+vc_buf_size = 2;
 
-wait_for_tail_credit = 1;
+wait_for_tail_credit = 0;
 
 watch_out = /home/siudya/booksim2/watch.log;
-watch_flits = {0};
-
+//watch_flits = {273};
+latency_thres = 512.0;
 
 vc_allocator = islip; 
 sw_allocator = islip;
@@ -68,14 +68,14 @@ sim_count          = 1;
 
 //topoogy
 
-topology = mesh;
-k  = 8;
+topology = chiplet_twin;
+k  = 4;
 n  = 2;
 //
 // Routing
 
 
-routing_function = dor;
+routing_function = dor_vda;
 
 packet_size = 1;
 
@@ -83,7 +83,6 @@ use_read_write = 0;
 
 traffic       = uniform;
 
-injection_rate = 0.2;
-
+injection_rate = 0.007;
 
 

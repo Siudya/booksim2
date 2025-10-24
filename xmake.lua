@@ -14,8 +14,6 @@ set_warnings("all")
 local incs = {"src", "src/arbiters", "src/allocators", "src/routers", "src/networks", "src/power"}
 local function apply_common()
     add_includedirs(table.unpack(incs))
-    add_cxxflags("-O3", {force = true})
-    add_cxxflags("-g", {force = true})
 end
 
 -- submodule: allocators
@@ -82,7 +80,7 @@ task("bs2")
         usage = "xmake bs2 <config_file>",
         description = "Run BookSim simulator with specified config file",
         options = {
-            {'c', "--config-file", "kv", "meshconfig", "Config file name (without path)"}
+            {'c', "--config-file", "kv", "chiplet_twin_config", "Config file name (without path)"}
         }
     }
     on_run(function (options)

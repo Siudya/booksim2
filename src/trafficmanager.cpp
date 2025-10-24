@@ -909,10 +909,12 @@ void TrafficManager::_GeneratePacket( int source, int stype,
         }
     
         f->vc  = -1;
+        f->deterministic = false;
 
         if ( f->watch ) { 
             *gWatchOut << GetSimTime() << " | "
-                       << "node" << source << " | "
+                       << "from node " << source << " | "
+                       << "to node " << f->dest << " | "
                        << "Enqueuing flit " << f->id
                        << " (packet " << f->pid
                        << ") at time " << time
@@ -964,6 +966,25 @@ void TrafficManager::_Step( )
     if(flits_in_flight && (_deadlock_timer++ >= _deadlock_warn_timeout)){
         _deadlock_timer = 0;
         cout << "WARNING: Possible network deadlock.\n";
+        
+        cout << "Flits that may be causing deadlock:\n";
+        for(int c = 0; c < _classes; ++c) {
+            if(!_total_in_flight_flits[c].empty()) {
+                cout << "  Class " << c << ": ";
+                map<int, Flit *>::const_iterator iter;
+                int count = 0;
+                for(iter = _total_in_flight_flits[c].begin(); 
+                    iter != _total_in_flight_flits[c].end() && count < 10; 
+                    iter++, count++) {
+                    cout << "flit_id=" << iter->second->id 
+                         << "(pid=" << iter->second->pid << ") ";
+                }
+                if(_total_in_flight_flits[c].size() > 10) {
+                    cout << "... (total " << _total_in_flight_flits[c].size() << " flits)";
+                }
+                cout << endl;
+            }
+        }
     }
 
     vector<map<int, Flit *> > flits(_subnets);
@@ -1062,7 +1083,7 @@ void TrafficManager::_Step( )
                 if(cf->head && cf->vc == -1) { // Find first available VC
 	  
                     OutputSet route_set;
-                    _rf(NULL, cf, -1, &route_set, true);
+                    _rf(_net.at(subnet)->GetRouter(n), cf, -1, &route_set, true);
                     set<OutputSet::sSetElement> const & os = route_set.GetSet();
                     assert(os.size() == 1);
                     OutputSet::sSetElement const & se = *os.begin();
@@ -1517,6 +1538,23 @@ bool TrafficManager::_SingleSim( )
         if ( _measure_latency && ( lat_exc_class >= 0 ) ) {
       
             cout << "Average latency for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
+            cout << "Flits causing latency timeout in class " << lat_exc_class << ":" << endl;
+            map<int, Flit *>::const_iterator iter;
+            int count = 0;
+            for(iter = _total_in_flight_flits[lat_exc_class].begin(); 
+                iter != _total_in_flight_flits[lat_exc_class].end() && count < 20; 
+                iter++, count++) {
+                int current_latency = _time - iter->second->ctime;
+                cout << "  flit_id=" << iter->second->id 
+                     << "(pid=" << iter->second->pid << ")"
+                     << " latency=" << current_latency << " cycles"
+                     << " src=" << iter->second->src 
+                     << " dest=" << iter->second->dest << endl;
+            }
+            if(_total_in_flight_flits[lat_exc_class].size() > 20) {
+                cout << "  ... (total " << _total_in_flight_flits[lat_exc_class].size() << " flits in flight)" << endl;
+            }
+            
             converged = 0; 
             _sim_state = draining;
             _drain_time = _time;
@@ -1592,6 +1630,23 @@ bool TrafficManager::_SingleSim( )
 	  
                     if(lat_exc_class >= 0) {
                         cout << "Average latency for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
+                        cout << "Flits causing latency timeout in class " << lat_exc_class << ":" << endl;
+                        map<int, Flit *>::const_iterator iter;
+                        int count = 0;
+                        for(iter = _total_in_flight_flits[lat_exc_class].begin(); 
+                            iter != _total_in_flight_flits[lat_exc_class].end() && count < 20; 
+                            iter++, count++) {
+                            int current_latency = _time - iter->second->ctime;
+                            cout << "  flit_id=" << iter->second->id 
+                                 << "(pid=" << iter->second->pid << ")"
+                                 << " latency=" << current_latency << " cycles"
+                                 << " src=" << iter->second->src 
+                                 << " dest=" << iter->second->dest << endl;
+                        }
+                        if(_total_in_flight_flits[lat_exc_class].size() > 20) {
+                            cout << "  ... (total " << _total_in_flight_flits[lat_exc_class].size() << " flits in flight)" << endl;
+                        }
+                        
                         converged = 0; 
                         _sim_state = warming_up;
                         if(_stats_out) {

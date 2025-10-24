@@ -143,7 +143,7 @@ void dim_order_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *
 }
 
 //=============================================================
-// Helper function for ChipletTwin routing
+// Helper function for ChipletNetwork routing
 int dor_chiplet_port_decision(const Router *r, const Flit *f) {
   int cur = r->GetID();
   int dst = f->dest;
@@ -198,7 +198,22 @@ void set_traffic_type(const Router *r, const Flit *f) {
   }
 }
 
-void dor_chiplet_twin(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
+void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
+  int vc_num = (vc_end - vc_begin + 1);
+  assert(vc_num % 2 == 0);
+  int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
+  int vn1_begin = vn0_end + 1;
+  int vn1_end = vc_end;
+  if(f->traffic_type == Flit::OUTBOUND) {
+    vc_sel_begin = vn1_begin;
+    vc_sel_end = vn1_end;
+  } else {
+    vc_sel_begin = vc_begin;
+    vc_sel_end = vc_end;
+  }
+}
+
+void dor_vda_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
   int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
   if(inject || (r->IsBoundaryRouter() && r->GetD2DPort() == in_channel)) set_traffic_type(r, f);
   
@@ -217,6 +232,7 @@ void dor_chiplet_twin(const Router *r, const Flit *f, int in_channel, OutputSet 
     vcEnd = gWriteReplyEndVC;
   }
   assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
+  va_vda(r, f, out_port, vcBegin, vcEnd, vcBegin, vcEnd);
 
   if (!inject && f->watch) {
     *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
@@ -226,6 +242,7 @@ void dor_chiplet_twin(const Router *r, const Flit *f, int in_channel, OutputSet 
                << " at output port " << out_port
                << " for flit " << f->id
                << " (input port " << in_channel
+               << ", local destination " << f->loc_dest
                << ", destination " << f->dest << ")"
                << " [Traffic: " << Flit::GetTrafficTypeString(f->traffic_type) << "]"
                << "." << endl;
@@ -233,16 +250,6 @@ void dor_chiplet_twin(const Router *r, const Flit *f, int in_channel, OutputSet 
   
   outputs->Clear();
   outputs->AddRange(out_port, vcBegin, vcEnd);
-}
-
-//=============================================================
-
-void dor_chiplet_mesh(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
-  return dor_chiplet_twin(r, f, in_channel, outputs, inject);
-}
-
-void dor_chiplet_p2p(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
-  return dor_chiplet_twin(r, f, in_channel, outputs, inject);
 }
 
 //=============================================================
@@ -299,10 +306,8 @@ void InitializeRoutingMap( const Configuration & config )
   
   // ===================================================
   // Chiplet routing functions
-  gRoutingFunctionMap["dor_chiplet_twin"] = &dor_chiplet_twin;
-  gRoutingFunctionMap["dor_chiplet_mesh"] = &dor_chiplet_mesh;
-  gRoutingFunctionMap["dor_chiplet_p2p"] = &dor_chiplet_p2p;
+  gRoutingFunctionMap["dor_vda_chiplet_twin"] = &dor_vda_chiplet;
+  gRoutingFunctionMap["dor_vda_chiplet_mesh"] = &dor_vda_chiplet;
+  gRoutingFunctionMap["dor_vda_chiplet_p2p"] = &dor_vda_chiplet;
   // ===================================================
-
-  
 }

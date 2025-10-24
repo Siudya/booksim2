@@ -109,7 +109,7 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
     router_name << "router";
     router_name << '_' << chip_id << '_' << y << '_' << x << '_' << i;
 
-    _routers[i] = Router::NewRouter( config, this, router_name.str( ),i, 4, 5);
+    _routers[i] = Router::NewRouter( config, this, router_name.str( ),i, 5, 5);
     _timed_modules.push_back(_routers[i].get());
 
     // Do not connect boundary edges

@@ -32,6 +32,20 @@ void ChipletMesh::_BuildNet( const Configuration &config )
   node_conn_d2d(bundry_router_2, bundry_router_3, down_port, up_port, 32);
   node_conn_d2d(bundry_router_4, bundry_router_5, left_port, right_port, 32);
   node_conn_d2d(bundry_router_6, bundry_router_7, up_port, down_port, 32);
+
+  const int dummy_0 = get_node_id(0, y_len - 2, 0);
+  const int dummy_1 = get_node_id(1, y_len - 2, x_len - 1);
+  const int dummy_2 = get_node_id(1, 0, 1);
+  const int dummy_3 = get_node_id(2, y_len - 1, 1);
+  const int dummy_4 = get_node_id(2, 1, x_len - 1);
+  const int dummy_5 = get_node_id(3, 1, 0);
+  const int dummy_6 = get_node_id(3, y_len - 1, x_len - 2);
+  const int dummy_7 = get_node_id(0, 0, x_len - 2);
+
+  node_conn_d2d(dummy_0, dummy_1, right_port, left_port, 32);
+  node_conn_d2d(dummy_2, dummy_3, down_port, up_port, 32);
+  node_conn_d2d(dummy_4, dummy_5, left_port, right_port, 32);
+  node_conn_d2d(dummy_6, dummy_7, up_port, down_port, 32);
 }
 
 const int ChipletMesh::get_boundary_router(const int inject_node_id, const int dest_node_id) {

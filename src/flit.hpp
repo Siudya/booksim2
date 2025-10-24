@@ -49,6 +49,8 @@ public:
 
   int vc;
 
+  bool deterministic;
+
   int cl;
 
   bool head;
