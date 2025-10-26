@@ -126,6 +126,10 @@ ChaosRouter::~ChaosRouter( )
   }
 }
   
+void ChaosRouter::SetInputBufferSize(int port, int size)
+{
+}
+
 void ChaosRouter::ReadInputs( )
 {
   Flit   *f;

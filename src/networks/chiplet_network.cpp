@@ -62,6 +62,55 @@ void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int
   r1->GetOutputChannel(n1_port)->SetLatency(lat);
   r0->GetOutputCreditChannel(n0_port)->SetLatency(lat);
   r1->GetOutputCreditChannel(n1_port)->SetLatency(lat);
+
+  r0->SetInputBufferSize(n0_port, lat * 2 + 1);
+  r1->SetInputBufferSize(n1_port, lat * 2 + 1);
+}
+
+void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {
+  const auto chip = get_chip(br0);
+  assert(get_chip(br0) == get_chip(br1));
+  const int br1_x = get_x(br1);
+  const int br1_y = get_y(br1);
+  int cur = br0;
+  int next = -1;
+  while(cur != br1) {
+    const int cur_x = get_x(cur);
+    const int cur_y = get_y(cur);
+    if(cur_x < br1_x) {
+      _routers[cur]->SetOutputMayBeDeadlock(right_port);
+      next = get_node_id(chip, cur_y, cur_x + 1);
+    } else if(cur_x > br1_x) {
+      _routers[cur]->SetOutputMayBeDeadlock(left_port);
+      next = get_node_id(chip, cur_y, cur_x - 1);
+    } else if(cur_y < br1_y) {
+      _routers[cur]->SetOutputMayBeDeadlock(down_port);
+      next = get_node_id(chip, cur_y + 1, cur_x);
+    } else if(cur_y > br1_y) {
+      _routers[cur]->SetOutputMayBeDeadlock(up_port);
+      next = get_node_id(chip, cur_y - 1, cur_x);
+    } else {
+      assert(false);
+      next = -1;
+    }
+    cout << "Setting up deadlock channel from " << cur << " to " << next << endl;
+    cur = next;
+  }
+  assert(cur == br1);
+}
+
+void ChipletNetwork::setup_deadlock_channels_dual_dir(int br0, int br1) {
+  if((get_chip(br0) != get_chip(br1)) || br0 == br1) return;
+  setup_deadlock_channels_mono_dir(br0, br1);
+  setup_deadlock_channels_mono_dir(br1, br0);
+}
+
+void ChipletNetwork::setup_deadlock_channels(const vector<int> &brs) {
+  for(int i = 0; i < brs.size(); ++i) {
+    for(int j = i + 1; j < brs.size(); ++j) {
+      setup_deadlock_channels_dual_dir(brs[i], brs[j]);
+    }
+  }
 }
 
 void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) {

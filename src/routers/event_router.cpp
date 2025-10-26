@@ -158,6 +158,11 @@ EventRouter::~EventRouter( )
   delete _arrival_pipe;
 }
   
+void EventRouter::SetInputBufferSize(int port, int size)
+{
+  _buf[port]->SetSize(size);
+}
+
 void EventRouter::ReadInputs( )
 {
   _ReceiveFlits( );

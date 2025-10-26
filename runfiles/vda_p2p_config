@@ -30,12 +30,12 @@
 //
 
 num_vcs     = 2;
-vc_buf_size = 2;
+vc_buf_size = 4;
 
 wait_for_tail_credit = 0;
 
 watch_out = /home/siudya/booksim2/watch.log;
-//watch_flits = {273};
+watch_flits = {39};
 latency_thres = 512.0;
 
 vc_allocator = islip; 
@@ -68,7 +68,7 @@ sim_count          = 1;
 
 //topoogy
 
-topology = chiplet_twin;
+topology = chiplet_p2p;
 k  = 4;
 n  = 2;
 //

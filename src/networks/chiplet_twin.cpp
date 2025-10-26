@@ -35,6 +35,14 @@ void ChipletTwin::_BuildNet( const Configuration &config )
   const int chip_1_dummy_1 = get_node_id(1, 1, x_len - 1);
   node_conn_d2d(chip_0_dummy_0, chip_1_dummy_0, left_port, right_port, 1);
   node_conn_d2d(chip_0_dummy_1, chip_1_dummy_1, left_port, right_port, 1);
+
+  vector<int> brs = {
+    bundry_router_0,
+    bundry_router_1,
+    bundry_router_2,
+    bundry_router_3
+  };
+  setup_deadlock_channels(brs);
 }
 
 const int ChipletTwin::get_boundary_router(const int inject_node_id, const int dest_node_id) {

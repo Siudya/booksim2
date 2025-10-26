@@ -148,6 +148,10 @@ public:
     return _vc[vc]->GetOccupancy( );
   }
 
+  inline void SetSize(int size) {
+    _size = size;
+  }
+
 #ifdef TRACK_BUFFERS
   inline int GetOccupancyForClass(int c) const
   {

@@ -40,6 +40,44 @@ void ChipletP2P::_BuildNet( const Configuration &config )
 
   node_conn_d2d(bundry_router_8, bundry_router_9, right_port, left_port, 32);
   node_conn_d2d(bundry_router_10, bundry_router_11, left_port, right_port, 32);
+
+  const int dummy_0 = get_node_id(0, y_len - 2, 0);
+  const int dummy_1 = get_node_id(1, y_len - 2, x_len - 1);
+  const int dummy_2 = get_node_id(1, 0, 1);
+  const int dummy_3 = get_node_id(2, y_len - 1, 1);
+  const int dummy_4 = get_node_id(2, 1, x_len - 1);
+  const int dummy_5 = get_node_id(3, 1, 0);
+  const int dummy_6 = get_node_id(3, y_len - 1, x_len - 2);
+  const int dummy_7 = get_node_id(0, 0, x_len - 2);
+
+  const int dummy_8 = get_node_id(0, y_len - 1, 0);
+  const int dummy_9 = get_node_id(2, 0, x_len - 1);
+  const int dummy_10 = get_node_id(1, y_len - 1, x_len - 1);
+  const int dummy_11 = get_node_id(3, 0, 0);
+
+  node_conn_d2d(dummy_0, dummy_1, left_port, right_port, 1);
+  node_conn_d2d(dummy_2, dummy_3, up_port, down_port, 1);
+  node_conn_d2d(dummy_4, dummy_5, right_port, left_port, 1);
+  node_conn_d2d(dummy_6, dummy_7, down_port, up_port, 1);
+
+  node_conn_d2d(dummy_8, dummy_9, left_port, right_port, 1);
+  node_conn_d2d(dummy_10, dummy_11, right_port, left_port, 1);
+
+  vector<int> brs = {
+    bundry_router_0,
+    bundry_router_1,
+    bundry_router_2,
+    bundry_router_3,
+    bundry_router_4,
+    bundry_router_5,
+    bundry_router_6,
+    bundry_router_7,
+    bundry_router_8,
+    bundry_router_9,
+    bundry_router_10,
+    bundry_router_11
+  };
+  setup_deadlock_channels(brs);
 }
 
 const int ChipletP2P::get_boundary_router(const int inject_node_id, const int dest_node_id) {

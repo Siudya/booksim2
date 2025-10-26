@@ -214,8 +214,8 @@ void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_beg
 }
 
 void dor_vda_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
-  int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
   if(inject || (r->IsBoundaryRouter() && r->GetD2DPort() == in_channel)) set_traffic_type(r, f);
+  int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
   
   int vcBegin = 0, vcEnd = gNumVCs-1;
   if (f->type == Flit::READ_REQUEST) {

@@ -73,6 +73,7 @@ protected:
   vector<FlitChannel *>   _output_channels;
   vector<CreditChannel *> _output_credits;
   vector<bool>            _channel_faults;
+  vector<bool>            _output_may_be_deadlock;
   
   Module * _network;
 
@@ -108,6 +109,13 @@ public:
   virtual void AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
   virtual void AlterOutputChannel( int port,  FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
   
+  virtual void SetInputBufferSize(int port, int size) = 0;
+
+  inline void SetOutputMayBeDeadlock(int port) {
+    assert((port >= 0) && (port < _outputs));
+    _output_may_be_deadlock[port] = true;
+  }
+
   inline const int GetD2DPort() const { return _d2d_port; }
   inline const bool IsBoundaryRouter() const { return _d2d_port != -1; }
   inline Module * GetNetwork() const { return _network; }

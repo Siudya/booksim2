@@ -71,8 +71,7 @@ target("booksim")
     set_kind("binary")
     apply_common()
     add_deps("allocators", "arbiters", "routers", "networks", "power")
-    add_files("src/*.cpp")
-    add_linkdirs("$(builddir)", "$(builddir)/linux/x86_64/$(mode)")
+    add_files(path.join("src", "*.cpp"))
     add_ldflags("-Wl,--start-group -lrouters -lnetworks -larbiters -lallocators -lpower -Wl,--end-group", {force = true})
 
 task("bs2")
@@ -80,7 +79,7 @@ task("bs2")
         usage = "xmake bs2 <config_file>",
         description = "Run BookSim simulator with specified config file",
         options = {
-            {'c', "--config-file", "kv", "chiplet_twin_config", "Config file name (without path)"}
+            {'c', "--config-file", "kv", "vda_twin_config", "Config file name (without path)"}
         }
     }
     on_run(function (options)

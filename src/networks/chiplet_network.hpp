@@ -9,6 +9,8 @@ class ChipletNetwork : public Network {
   int right_node(int node_id);
   int up_node(int node_id);
   int down_node(int node_id);
+  void setup_deadlock_channels_mono_dir(int br0, int br1);
+  void setup_deadlock_channels_dual_dir(int br0, int br1);
 
   public:
   // node[chip_id][y][x]
@@ -35,6 +37,7 @@ class ChipletNetwork : public Network {
   void single_chip_conn( const Configuration &config, int chip_id);
   void node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat);
   void node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat);
+  void setup_deadlock_channels(const vector<int> &brs);
   virtual const int get_boundary_router(const int inject_node_id, const int dest_node_id) = 0;
   virtual const bool is_boundary_router(const int node_id) = 0;
 };

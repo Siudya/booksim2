@@ -59,7 +59,7 @@ Router::Router( const Configuration& config,
 		Module *parent, const string & name, int id,
 		int inputs, int outputs ) :
 TimedModule( parent, name ), _id( id ), _inputs( inputs ), _outputs( outputs ),
-   _partial_internal_cycles(0.0), _d2d_port(-1)
+   _partial_internal_cycles(0.0), _d2d_port(-1), _output_may_be_deadlock(outputs, false)
 {
   _crossbar_delay   = ( config.GetInt( "st_prepare_delay" ) + 
 			config.GetInt( "st_final_delay" ) );
