@@ -152,7 +152,8 @@ BookSimConfig::BookSimConfig( )
   _int_map["alloc_iters"] = 1;
   
   //==== Traffic ========================================
-
+  _int_map["deterministic"] = 0;
+  
   _int_map["classes"] = 1;
 
   AddStrField( "traffic", "uniform" );

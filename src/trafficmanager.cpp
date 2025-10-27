@@ -111,6 +111,7 @@ TrafficManager::TrafficManager( const Configuration &config, const vector<Networ
             Error("NOQ requires lookahead routing to be enabled.");
         }
     }
+    _deterministic_routing = config.GetInt("deterministic");
 
     // ============ Traffic ============ 
 
@@ -909,7 +910,7 @@ void TrafficManager::_GeneratePacket( int source, int stype,
         }
     
         f->vc  = -1;
-        f->deterministic = false;
+        f->deterministic = _deterministic_routing;
 
         if ( f->watch ) { 
             *gWatchOut << GetSimTime() << " | "

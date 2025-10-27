@@ -79,13 +79,32 @@ task("bs2")
         usage = "xmake bs2 <config_file>",
         description = "Run BookSim simulator with specified config file",
         options = {
-            {'c', "--config-file", "kv", "vda_twin_config", "Config file name (without path)"}
+            {'d', "--deterministic", "k", nil, "Deterministic"},
+            {'C', "--config-file", "kv", "chiplet", "Config file name (without path and extension)"},
+            {'R', "--rc-function", "kv", "dor", "Routing computation function (dor)"},
+            {'A', "--va-function", "kv", "vda", "VC alloc function (vda, red, mvn, rc)"},
+            {'t', "--topology", "kv", "twin", "Topology (twin, mesh, p2p)"},
+            {'T', "--traffic", "kv", "uniform", "Traffic types (uniform, transpose, diagonal)"},
+            {'I', "--injection-rate", "kv", "0.001", "Injection rate"},
+            {'W', "--watch-out", "kv", "", "Watch out file name (without path and extension)"},
+            {'X', "--watch-flits", "kv", "", "Watch flits name"},
+            {'L', "--latency-threshold", "kv", "512.0", "Latency threshold"},
         }
     }
     on_run(function (options)
         import("core.base.option")
         local bin = path.join(os.projectdir(), "build", "linux", "x86_64", "release", "booksim")
-        local config_file = path.join(os.projectdir(), "runfiles", option.get("--config-file"))
-        print("%s %s", bin, config_file)
-        os.exec("%s %s", bin, config_file)
+        local config_file = path.join(os.projectdir(), "runfiles", option.get("--config-file") .. "config")
+        local opts = {config_file}
+        if option.get("--deterministic") then table.join2(opts, { "deterministic=1" }) end
+        table.join2(opts, { "topology=" .. option.get("--config-file") .. "_" .. option.get("--topology") })
+        table.join2(opts, { "traffic=" .. option.get("--traffic") })
+        table.join2(opts, { "injection_rate=" .. option.get("--injection-rate") })
+        if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_out=" .. option.get("--watch-out") }) end
+        if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_flits=" .. option.get("--watch-flits") }) end
+        table.join2(opts, { "routing_function=" .. option.get("--rc-function") .. "_" .. option.get("--va-function") })
+        table.join2(opts, { "latency_thres=" .. option.get("--latency-threshold") })
+
+        print("%s %s", bin, table.concat(opts, " "))
+        os.execv(bin, opts)
     end)

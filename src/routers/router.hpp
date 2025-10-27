@@ -116,6 +116,11 @@ public:
     _output_may_be_deadlock[port] = true;
   }
 
+  inline bool CheckOutputMayBeDeadlock(int port) const {
+    assert((port >= 0) && (port < _outputs));
+    return _output_may_be_deadlock[port];
+  }
+
   inline const int GetD2DPort() const { return _d2d_port; }
   inline const bool IsBoundaryRouter() const { return _d2d_port != -1; }
   inline Module * GetNetwork() const { return _network; }

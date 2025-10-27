@@ -198,6 +198,8 @@ void set_traffic_type(const Router *r, const Flit *f) {
   }
 }
 
+typedef void (*va_strategy_func)(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end);
+
 void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
   int vc_num = (vc_end - vc_begin + 1);
   assert(vc_num % 2 == 0);
@@ -213,7 +215,51 @@ void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_beg
   }
 }
 
-void dor_vda_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
+void va_red(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
+  int vc_num = (vc_end - vc_begin + 1);
+  assert(vc_num % 2 == 0);
+  int vn0_begin = vc_begin;
+  int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
+  int vn1_begin = vn0_end + 1;
+  int vn1_end = vc_end;
+  if(vn1_begin <= f->vc && f->vc < vn1_end) { // Flit in VN1 should not route to VN0
+    vc_sel_begin = vn1_begin;
+    vc_sel_end = vn1_end;
+  } else if(f->traffic_type == Flit::INBOUND) { // Inbound flit should route to VN1
+    vc_sel_begin = vn1_begin;
+    vc_sel_end = vn1_end;
+  } else if(f->traffic_type == Flit::OUTBOUND) { // Outbound flit should route to VN0
+    vc_sel_begin = vn0_begin;
+    vc_sel_end = vn0_end;
+  } else {
+    vc_sel_begin = vc_begin;
+    vc_sel_end = vc_end;
+  }
+}
+
+void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
+  int vc_num = (vc_end - vc_begin + 1);
+  assert(vc_num % 2 == 0);
+  int vn0_begin = vc_begin;
+  int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
+  int vn1_begin = vn0_end + 1;
+  int vn1_end = vc_end;
+  if(r->CheckOutputMayBeDeadlock(out_port) && f->traffic_type == Flit::OUTBOUND) {
+    vc_sel_begin = vn1_begin;
+    vc_sel_end = vn1_end;
+  } else {
+    vc_sel_begin = vc_begin;
+    vc_sel_end = vc_end;
+  }
+}
+
+void va_rc(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
+  vc_sel_begin = vc_begin;
+  vc_sel_end = vc_end;
+}
+
+template<va_strategy_func VAStrategy>
+void dor_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject) {
   if(inject || (r->IsBoundaryRouter() && r->GetD2DPort() == in_channel)) set_traffic_type(r, f);
   int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
   
@@ -232,9 +278,19 @@ void dor_vda_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *
     vcEnd = gWriteReplyEndVC;
   }
   assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
-  va_vda(r, f, out_port, vcBegin, vcEnd, vcBegin, vcEnd);
 
-  if (!inject && f->watch) {
+  // Select the legal VC range based on the VA strategy
+  if(out_port != ChipletNetwork::local_port) VAStrategy(r, f, out_port, vcBegin, vcEnd, vcBegin, vcEnd);
+
+  // If deterministic, select the VC based on the flit's input VC
+  const int candidate_vc_num = (vcEnd - vcBegin + 1);
+  if(f->deterministic && !inject) {
+    vcBegin = vcBegin + (f->vc % candidate_vc_num);
+    vcEnd = vcBegin;
+  }
+
+  // if (!inject && f->watch) {
+  if (f->watch) {
     *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
                << "Adding VC range [" 
                << vcBegin << "," 
@@ -306,8 +362,17 @@ void InitializeRoutingMap( const Configuration & config )
   
   // ===================================================
   // Chiplet routing functions
-  gRoutingFunctionMap["dor_vda_chiplet_twin"] = &dor_vda_chiplet;
-  gRoutingFunctionMap["dor_vda_chiplet_mesh"] = &dor_vda_chiplet;
-  gRoutingFunctionMap["dor_vda_chiplet_p2p"] = &dor_vda_chiplet;
+  gRoutingFunctionMap["dor_vda_chiplet_twin"] = &dor_chiplet<va_vda>;
+  gRoutingFunctionMap["dor_vda_chiplet_mesh"] = &dor_chiplet<va_vda>;
+  gRoutingFunctionMap["dor_vda_chiplet_p2p"] = &dor_chiplet<va_vda>;
+  gRoutingFunctionMap["dor_red_chiplet_twin"] = &dor_chiplet<va_red>;
+  gRoutingFunctionMap["dor_red_chiplet_mesh"] = &dor_chiplet<va_red>;
+  gRoutingFunctionMap["dor_red_chiplet_p2p"] = &dor_chiplet<va_red>;
+  gRoutingFunctionMap["dor_mvn_chiplet_twin"] = &dor_chiplet<va_mvn>;
+  gRoutingFunctionMap["dor_mvn_chiplet_mesh"] = &dor_chiplet<va_mvn>;
+  gRoutingFunctionMap["dor_mvn_chiplet_p2p"] = &dor_chiplet<va_mvn>;
+  gRoutingFunctionMap["dor_rc_chiplet_twin"] = &dor_chiplet<va_rc>;
+  gRoutingFunctionMap["dor_rc_chiplet_mesh"] = &dor_chiplet<va_rc>;
+  gRoutingFunctionMap["dor_rc_chiplet_p2p"] = &dor_chiplet<va_rc>;
   // ===================================================
 }

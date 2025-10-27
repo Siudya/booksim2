@@ -44,7 +44,6 @@
 #include <fstream>
 
 
-
 #include <sstream>
 #include "booksim.hpp"
 #include "routefunc.hpp"
