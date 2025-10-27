@@ -240,7 +240,6 @@ void va_red(const Router *r, const Flit *f, const int out_port, const int vc_beg
 void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
   int vc_num = (vc_end - vc_begin + 1);
   assert(vc_num % 2 == 0);
-  int vn0_begin = vc_begin;
   int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
   int vn1_begin = vn0_end + 1;
   int vn1_end = vc_end;
@@ -280,16 +279,14 @@ void dor_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outp
   assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
 
   // Select the legal VC range based on the VA strategy
-  if(out_port != ChipletNetwork::local_port) VAStrategy(r, f, out_port, vcBegin, vcEnd, vcBegin, vcEnd);
+  if(out_port != ChipletNetwork::local_port && !inject) VAStrategy(r, f, out_port, vcBegin, vcEnd, vcBegin, vcEnd);
 
   // If deterministic, select the VC based on the flit's input VC
   const int candidate_vc_num = (vcEnd - vcBegin + 1);
   if(f->deterministic && !inject) {
-    vcBegin = vcBegin + (f->vc % candidate_vc_num);
+    vcBegin = vcBegin + (f->vc_prealloc % candidate_vc_num);
     vcEnd = vcBegin;
   }
-
-  // if (!inject && f->watch) {
   if (f->watch) {
     *gWatchOut << GetSimTime() << " | " << r->FullName() << " | "
                << "Adding VC range [" 

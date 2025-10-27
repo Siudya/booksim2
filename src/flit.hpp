@@ -50,6 +50,7 @@ public:
   int vc;
 
   bool deterministic;
+  int  vc_prealloc;
 
   int cl;
 
