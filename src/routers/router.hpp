@@ -109,7 +109,7 @@ public:
   virtual void AlterInputChannel( int port, FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
   virtual void AlterOutputChannel( int port,  FlitChannel *channel, CreditChannel *backchannel, bool d2d = false );
   
-  virtual void SetInputBufferSize(int port, int size) = 0;
+  virtual void SetBufferSize(int port, int size) = 0;
 
   inline void SetOutputMayBeDeadlock(int port) {
     assert((port >= 0) && (port < _outputs));

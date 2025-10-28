@@ -191,6 +191,10 @@ public:
 
   void TakeBuffer( int vc = 0, int tag = 0 );
 
+  inline void SetSize(int size) {
+    _size = size;
+  }
+
   inline bool IsFull() const {
     assert(_occupancy <= _size);
     return (_occupancy == _size);

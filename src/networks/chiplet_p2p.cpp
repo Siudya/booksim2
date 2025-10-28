@@ -5,6 +5,7 @@
 ChipletP2P::ChipletP2P ( const Configuration &config, const string & name):ChipletNetwork( config, name ) {
   _ComputeSize( config );
   _Alloc();
+  setup_resources(config);
   _BuildNet( config );
 }
 

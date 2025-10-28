@@ -175,7 +175,7 @@ public:
   virtual vector<int> FreeCredits() const;
   virtual vector<int> MaxCredits() const;
 
-  void SetInputBufferSize(int port, int size);
+  void SetBufferSize(int port, int size);
 
   SwitchMonitor const * const GetSwitchMonitor() const {return _switchMonitor;}
   BufferMonitor const * const GetBufferMonitor() const {return _bufferMonitor;}

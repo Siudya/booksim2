@@ -1,6 +1,7 @@
 #include "booksim.hpp"
 #include "chiplet_network.hpp"
 #include <sstream>
+#include "inject_controller.hpp"
 
 ChipletNetwork::ChipletNetwork (const Configuration &config, const string & name):Network( config, name ) {}
 
@@ -63,8 +64,8 @@ void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int
   r0->GetOutputCreditChannel(n0_port)->SetLatency(lat);
   r1->GetOutputCreditChannel(n1_port)->SetLatency(lat);
 
-  r0->SetInputBufferSize(n0_port, lat * 2 + 1);
-  r1->SetInputBufferSize(n1_port, lat * 2 + 1);
+  r0->SetBufferSize(n0_port, lat * 2 + 1);
+  r1->SetBufferSize(n1_port, lat * 2 + 1);
 }
 
 void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {
@@ -113,10 +114,52 @@ void ChipletNetwork::setup_deadlock_channels(const vector<int> &brs) {
   }
 }
 
+void ChipletNetwork::setup_resources(const Configuration &config) {
+  ostringstream name;
+  const int _classes = config.GetInt("classes");
+  if(config.GetInt("use_rc_buffer") > 0) {
+    _inject_inter.resize(_nodes);
+    _inject_cred_inter.resize(_nodes);
+    _eject_inter.resize(_nodes);
+    _eject_cred_inter.resize(_nodes);
+    _inject_controllers.resize(_nodes);
+  }
+  for(int i = 0; i < _nodes; ++i) {
+    const int chip_id = get_chip(i);
+    const int y = get_y(i);
+    const int x = get_x(i);
+    name << "router";
+    name << '_' << chip_id << '_' << y << '_' << x << '_' << i;
+    _routers[i] = Router::NewRouter( config, this, name.str( ),i, 5, 5);
+    _timed_modules.push_back(_routers[i].get());
+    name.str("");
+    if(config.GetInt("use_rc_buffer") > 0) {
+      name << Name() << "_fchan_ingress_inter_" << i;
+      _inject_inter[i] = make_unique<FlitChannel>(this, name.str(), _classes);
+      name.str("");
+      name << Name() << "_cchan_ingress_inter_" << i;
+      _inject_cred_inter[i] = make_unique<CreditChannel>(this, name.str());
+      name.str("");
+      name << Name() << "_fchan_egress_inter_" << i;
+      _eject_inter[i] = make_unique<FlitChannel>(this, name.str(), _classes);
+      name.str("");
+      name << Name() << "_cchan_egress_inter_" << i;
+      _eject_cred_inter[i] = make_unique<CreditChannel>(this, name.str());
+      name.str("");
+      name << Name() << "_inject_controller_" << i;
+      _inject_controllers[i] = make_unique<InjectController>(config, this, name.str(), _routers[i].get());
+      name.str("");
+      _timed_modules.push_back(_inject_inter[i].get());
+      _timed_modules.push_back(_inject_cred_inter[i].get());
+      _timed_modules.push_back(_eject_inter[i].get());
+      _timed_modules.push_back(_eject_cred_inter[i].get());
+      _timed_modules.push_back(_inject_controllers[i].get());
+    }
+  }
+}
+
 void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) {
   int node = chip_id * chip_size;
-
-  ostringstream router_name;
 
   int left_node;
   int right_node;
@@ -132,9 +175,6 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
   int left_output;
   int up_output;
   int down_output;
-
-  int x;
-  int y;
 
   for(int i = node; i < node + chip_size; ++i) {
     left_node = this->left_node(i);
@@ -152,15 +192,6 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
     up_output = this->up_channel(i);
     down_output = this->down_channel(i);
 
-    x = get_x(i);
-    y = get_y(i);
-
-    router_name << "router";
-    router_name << '_' << chip_id << '_' << y << '_' << x << '_' << i;
-
-    _routers[i] = Router::NewRouter( config, this, router_name.str( ),i, 5, 5);
-    _timed_modules.push_back(_routers[i].get());
-
     // Do not connect boundary edges
     // right:0 left:1 down:2 up:3
     node_conn(i, right_input, right_output, 1, 1);
@@ -168,13 +199,23 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
     node_conn(i, down_input, down_output, 1, 1);
     node_conn(i, up_input, up_output, 1, 1);
 
-    //injection and ejection channel, always 1 latency
-    // local: 4
-    _routers[i]->AddInputChannel( _inject[i].get(), _inject_cred[i].get() );
-    _routers[i]->AddOutputChannel( _eject[i].get(), _eject_cred[i].get() );
-    _inject[i]->SetLatency( 1 );
-    _eject[i]->SetLatency( 1 );
-
-    router_name.str("");
+    if(config.GetInt("use_rc_buffer") > 0) {
+      _routers[i]->AddInputChannel( _inject_inter[i].get(), _inject_cred_inter[i].get() );
+      _routers[i]->AddOutputChannel( _eject_inter[i].get(), _eject_cred_inter[i].get() );
+      _inject_inter[i]->SetLatency( 1 );
+      _eject_inter[i]->SetLatency( 1 );
+      
+      _inject_controllers[i]->SetInjectUpstreamChannel( _inject[i].get(), _inject_cred[i].get() );
+      _inject_controllers[i]->SetInjectDownstreamChannel( _inject_inter[i].get(), _inject_cred_inter[i].get() );
+      _inject_controllers[i]->SetEjectUpstreamChannel( _eject[i].get(), _eject_cred[i].get() );
+      _inject_controllers[i]->SetEjectDownstreamChannel( _eject_inter[i].get(), _eject_cred_inter[i].get() );
+      _inject[i]->SetLatency( 1 );
+      _eject[i]->SetLatency( 1 );
+    } else {
+      _routers[i]->AddInputChannel( _inject[i].get(), _inject_cred[i].get() );
+      _routers[i]->AddOutputChannel( _eject[i].get(), _eject_cred[i].get() );
+      _inject[i]->SetLatency( 1 );
+      _eject[i]->SetLatency( 1 );
+    }
   }
 }

@@ -102,6 +102,7 @@ task("bs2")
         table.join2(opts, { "injection_rate=" .. option.get("--injection-rate") })
         if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_out=" .. option.get("--watch-out") }) end
         if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_flits=" .. option.get("--watch-flits") }) end
+        if option.get("--va-function") == "rc" then table.join2(opts, { "use_rc_buffer=1", "num_vcs=4" }) end
         table.join2(opts, { "routing_function=" .. option.get("--rc-function") .. "_" .. option.get("--va-function") })
         table.join2(opts, { "latency_thres=" .. option.get("--latency-threshold") })
 

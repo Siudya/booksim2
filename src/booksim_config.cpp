@@ -90,6 +90,8 @@ BookSimConfig::BookSimConfig( )
   //full output buffer will cancel switch allocation requests
   //default setting is unlimited
   _int_map["output_buffer_size"] = -1;
+  _int_map["use_rc_buffer"] = 0;
+  _int_map["rc_buf_size"] = 16;
 
   // enable next-hop-output queueing
   _int_map["noq"] = 0;

@@ -2,6 +2,7 @@
 #define _CHIPLET_NETWORK_HPP_
 
 #include "network.hpp"
+#include "inject_controller.hpp"
 
 class ChipletNetwork : public Network {
   private:
@@ -11,7 +12,12 @@ class ChipletNetwork : public Network {
   int down_node(int node_id);
   void setup_deadlock_channels_mono_dir(int br0, int br1);
   void setup_deadlock_channels_dual_dir(int br0, int br1);
-
+  vector<std::unique_ptr<FlitChannel>> _inject_inter;
+  vector<std::unique_ptr<CreditChannel>> _inject_cred_inter;
+  vector<std::unique_ptr<FlitChannel>> _eject_inter;
+  vector<std::unique_ptr<CreditChannel>> _eject_cred_inter;
+  vector<std::unique_ptr<InjectController>> _inject_controllers;
+  
   public:
   // node[chip_id][y][x]
   static const int x_len = 4;
@@ -38,6 +44,7 @@ class ChipletNetwork : public Network {
   void node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat);
   void node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat);
   void setup_deadlock_channels(const vector<int> &brs);
+  void setup_resources(const Configuration &config);
   virtual const int get_boundary_router(const int inject_node_id, const int dest_node_id) = 0;
   virtual const bool is_boundary_router(const int node_id) = 0;
 };

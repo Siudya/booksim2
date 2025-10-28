@@ -126,7 +126,7 @@ public:
   virtual vector<int> FreeCredits() const { return vector<int>(); }
   virtual vector<int> MaxCredits() const { return vector<int>(); }
 
-  void SetInputBufferSize(int port, int size);
+  void SetBufferSize(int port, int size);
 
   void Display( ostream & os = cout ) const;
 };

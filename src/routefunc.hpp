@@ -35,10 +35,8 @@
 
 typedef void (*tRoutingFunction)( const Router *, const Flit *, int in_channel, OutputSet *, bool );
 
-// VA策略函数类型定义
 typedef void (*va_strategy_func)(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end);
 
-// 模板函数声明
 template<va_strategy_func VAStrategy>
 void dor_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject);
 
@@ -51,5 +49,8 @@ extern int gReadReqBeginVC, gReadReqEndVC;
 extern int gWriteReqBeginVC, gWriteReqEndVC;
 extern int gReadReplyBeginVC, gReadReplyEndVC;
 extern int gWriteReplyBeginVC, gWriteReplyEndVC;
+extern int gDataBeginVC, gDataEndVC;
+extern int gOutboundReqVC, gOutboundRspVC;
+extern bool gUseRCBuffer;
 
 #endif

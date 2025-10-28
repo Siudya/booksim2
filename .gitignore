@@ -7,4 +7,5 @@ build
 .xmake
 .vscode
 *.log
+*.out
 

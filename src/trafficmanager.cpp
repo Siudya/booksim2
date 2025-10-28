@@ -912,6 +912,7 @@ void TrafficManager::_GeneratePacket( int source, int stype,
         f->vc  = -1;
         f->deterministic = _deterministic_routing;
         f->vc_prealloc = -1;
+        f->to_rc_buffer = false;
 
         if ( f->watch ) { 
             *gWatchOut << GetSimTime() << " | "

@@ -126,7 +126,7 @@ ChaosRouter::~ChaosRouter( )
   }
 }
   
-void ChaosRouter::SetInputBufferSize(int port, int size)
+void ChaosRouter::SetBufferSize(int port, int size)
 {
 }
 

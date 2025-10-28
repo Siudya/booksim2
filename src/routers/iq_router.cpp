@@ -180,9 +180,10 @@ IQRouter::IQRouter( Configuration const & config, Module *parent,
 #endif
 }
 
-void IQRouter::SetInputBufferSize(int port, int size)
+void IQRouter::SetBufferSize(int port, int size)
 {
   _buf[port]->SetSize(size);
+  _next_buf[port]->SetSize(size);
 }
 
 IQRouter::~IQRouter( )

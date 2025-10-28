@@ -44,7 +44,10 @@ public:
 		  READ_REPLY    = 1,
 		  WRITE_REQUEST = 2,
 		  WRITE_REPLY   = 3,
-                  ANY_TYPE      = 4 };
+      ANY_TYPE      = 4,
+      OUTBOUND_REQ  = 5,
+      OUTBOUND_RSP  = 6
+     };
   FlitType type;
 
   int vc;
@@ -74,6 +77,8 @@ public:
   int  hops;
   bool watch;
   int  subnetwork;
+
+  bool to_rc_buffer;
   
   // intermediate destination (if any)
   mutable int intm;

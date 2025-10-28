@@ -65,6 +65,10 @@ int gReadReqBeginVC, gReadReqEndVC;
 int gWriteReqBeginVC, gWriteReqEndVC;
 int gReadReplyBeginVC, gReadReplyEndVC;
 int gWriteReplyBeginVC, gWriteReplyEndVC;
+int gOutboundReqVC;
+int gOutboundRspVC;
+int gDataBeginVC, gDataEndVC;
+bool gUseRCBuffer;
 
 //
 // End Balfour-Schultz
@@ -153,12 +157,12 @@ int dor_chiplet_port_decision(const Router *r, const Flit *f) {
   int cur_y = ChipletNetwork::get_y(cur);
   int dest_x = ChipletNetwork::get_x(loc_dst);
   int dest_y = ChipletNetwork::get_y(loc_dst);
-
+  
   if (cur == dst) {
     return ChipletNetwork::local_port;
   } else if(cur == loc_dst) {
     assert(r->IsBoundaryRouter());
-    return r->GetD2DPort();
+    return f->to_rc_buffer ? ChipletNetwork::local_port : r->GetD2DPort();
   } else if(cur_x != dest_x) {
     return (cur_x < dest_x) ? ChipletNetwork::right_port : ChipletNetwork::left_port;
   } else if(cur_y != dest_y) {
@@ -262,19 +266,16 @@ void dor_chiplet(const Router *r, const Flit *f, int in_channel, OutputSet *outp
   if(inject || (r->IsBoundaryRouter() && r->GetD2DPort() == in_channel)) set_traffic_type(r, f);
   int out_port = inject ? -1 : dor_chiplet_port_decision(r, f);
   
-  int vcBegin = 0, vcEnd = gNumVCs-1;
-  if (f->type == Flit::READ_REQUEST) {
-    vcBegin = gReadReqBeginVC;
-    vcEnd = gReadReqEndVC;
-  } else if (f->type == Flit::WRITE_REQUEST) {
-    vcBegin = gWriteReqBeginVC;
-    vcEnd = gWriteReqEndVC;
-  } else if (f->type == Flit::READ_REPLY) {
-    vcBegin = gReadReplyBeginVC;
-    vcEnd = gReadReplyEndVC;
-  } else if (f->type == Flit::WRITE_REPLY) {
-    vcBegin = gWriteReplyBeginVC;
-    vcEnd = gWriteReplyEndVC;
+  int vcBegin, vcEnd;
+  if (f->type == Flit::OUTBOUND_REQ) {
+    vcBegin = gOutboundReqVC;
+    vcEnd = gOutboundReqVC;
+  } else if (f->type == Flit::OUTBOUND_RSP) {
+    vcBegin = gOutboundRspVC;
+    vcEnd = gOutboundRspVC;
+  } else {
+    vcBegin = gDataBeginVC;
+    vcEnd = gDataEndVC;
   }
   assert(((f->vc >= vcBegin) && (f->vc <= vcEnd)) || (inject && (f->vc < 0)));
 
@@ -347,6 +348,13 @@ void InitializeRoutingMap( const Configuration & config )
   if(gWriteReplyEndVC < 0) {
     gWriteReplyEndVC = gNumVCs - 1;
   }
+  
+  gUseRCBuffer = config.GetInt("use_rc_buffer") > 0;
+  if(gUseRCBuffer) assert(gNumVCs > 2);
+  gDataBeginVC = 0;
+  gDataEndVC = gUseRCBuffer ? gNumVCs - 3 : gNumVCs - 1;
+  gOutboundReqVC = gNumVCs - 2;
+  gOutboundRspVC = gNumVCs - 1;
 
   /* Register routing functions here */
 
