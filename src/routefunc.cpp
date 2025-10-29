@@ -207,15 +207,18 @@ typedef void (*va_strategy_func)(const Router *r, const Flit *f, const int out_p
 void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
   int vc_num = (vc_end - vc_begin + 1);
   assert(vc_num % 2 == 0);
+  int vn0_begin = vc_begin;
   int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
   int vn1_begin = vn0_end + 1;
   int vn1_end = vc_end;
-  if(f->traffic_type == Flit::OUTBOUND) {
+  vc_sel_begin = vc_begin;
+  vc_sel_end = vc_end;
+  if(f->traffic_type == Flit::INBOUND && f->deterministic) {
+    vc_sel_begin = vn0_begin;
+    vc_sel_end = vn0_end;
+  } else if(f->traffic_type == Flit::OUTBOUND) {
     vc_sel_begin = vn1_begin;
     vc_sel_end = vn1_end;
-  } else {
-    vc_sel_begin = vc_begin;
-    vc_sel_end = vc_end;
   }
 }
 
@@ -226,6 +229,8 @@ void va_red(const Router *r, const Flit *f, const int out_port, const int vc_beg
   int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
   int vn1_begin = vn0_end + 1;
   int vn1_end = vc_end;
+  vc_sel_begin = vc_begin;
+  vc_sel_end = vc_end;
   if(vn1_begin <= f->vc && f->vc < vn1_end) { // Flit in VN1 should not route to VN0
     vc_sel_begin = vn1_begin;
     vc_sel_end = vn1_end;
@@ -235,24 +240,26 @@ void va_red(const Router *r, const Flit *f, const int out_port, const int vc_beg
   } else if(f->traffic_type == Flit::OUTBOUND) { // Outbound flit should route to VN0
     vc_sel_begin = vn0_begin;
     vc_sel_end = vn0_end;
-  } else {
-    vc_sel_begin = vc_begin;
-    vc_sel_end = vc_end;
   }
 }
 
 void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
   int vc_num = (vc_end - vc_begin + 1);
   assert(vc_num % 2 == 0);
+  int vn0_begin = vc_begin;
   int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
   int vn1_begin = vn0_end + 1;
   int vn1_end = vc_end;
-  if(r->CheckOutputMayBeDeadlock(out_port) && f->traffic_type == Flit::OUTBOUND) {
-    vc_sel_begin = vn1_begin;
-    vc_sel_end = vn1_end;
-  } else {
-    vc_sel_begin = vc_begin;
-    vc_sel_end = vc_end;
+  vc_sel_begin = vc_begin;
+  vc_sel_end = vc_end;
+  if(r->CheckOutputMayBeDeadlock(out_port)) {
+    if(f->traffic_type == Flit::INBOUND && f->deterministic) {
+      vc_sel_begin = vn0_begin;
+      vc_sel_end = vn0_end;
+    } else if(f->traffic_type == Flit::OUTBOUND) {
+      vc_sel_begin = vn1_begin;
+      vc_sel_end = vn1_end;
+    }
   }
 }
 

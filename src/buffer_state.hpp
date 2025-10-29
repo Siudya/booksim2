@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <queue>
+#include <memory>
 
 #include "module.hpp"
 #include "flit.hpp"
@@ -52,7 +53,7 @@ class BufferState : public Module {
     virtual int AvailableFor(int vc = 0) const = 0;
     virtual int LimitFor(int vc = 0) const = 0;
 
-    static BufferPolicy * New(Configuration const & config, 
+    static unique_ptr<BufferPolicy> New(Configuration const & config, 
 			      BufferState * parent, const string & name);
   };
   
@@ -162,7 +163,7 @@ class BufferState : public Module {
   vector<int> _vc_occupancy;
   int  _vcs;
   
-  BufferPolicy * _buffer_policy;
+  unique_ptr<BufferPolicy>  _buffer_policy;
   
   vector<int> _in_use_by;
   vector<bool> _tail_sent;
@@ -179,8 +180,6 @@ public:
 
   BufferState( const Configuration& config, 
 	       Module *parent, const string& name );
-
-  ~BufferState();
 
   inline void SetMinLatency(int min_latency) {
     _buffer_policy->SetMinLatency(min_latency);

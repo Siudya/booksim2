@@ -84,7 +84,7 @@ task("bs2")
             {'R', "--rc-function", "kv", "dor", "Routing computation function (dor)"},
             {'A', "--va-function", "kv", "vda", "VC alloc function (vda, red, mvn, rc)"},
             {'t', "--topology", "kv", "twin", "Topology (twin, mesh, p2p)"},
-            {'T', "--traffic", "kv", "uniform", "Traffic types (uniform, transpose, diagonal)"},
+            {'T', "--traffic", "kv", "uniform", "Traffic types (uniform, bitcomp, transpose, bitrev, shuffle, background, diagonal, asymmetric, taper64, bad_dragon, tornado, neighbor, hotspot)"},
             {'I', "--injection-rate", "kv", "0.001", "Injection rate"},
             {'W', "--watch-out", "kv", "", "Watch out file name (without path and extension)"},
             {'X', "--watch-flits", "kv", "", "Watch flits name"},
@@ -106,6 +106,20 @@ task("bs2")
         table.join2(opts, { "routing_function=" .. option.get("--rc-function") .. "_" .. option.get("--va-function") })
         table.join2(opts, { "latency_thres=" .. option.get("--latency-threshold") })
 
+        local log_file = option.get("--topology")
+        log_file = log_file .. "_" .. option.get("--traffic")
+        log_file = log_file .. "_" .. option.get("--va-function")
+        if option.get("--deterministic") then 
+            log_file = log_file .. "_ord"
+        else
+            log_file = log_file .. "_rnd"
+        end
+        log_file = log_file .. "_" .. option.get("--injection-rate") .. ".log"
+        
+        local log_dir = path.join(os.projectdir(), "logs")
+        if not os.exists(log_dir) then os.mkdir(log_dir) end
+        log_file = path.join(log_dir, log_file)
+
         print("%s %s", bin, table.concat(opts, " "))
-        os.execv(bin, opts)
+        os.execv(bin, opts, {stdout = log_file})
     end)

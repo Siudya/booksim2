@@ -111,9 +111,14 @@ public:
   
   virtual void SetBufferSize(int port, int size) = 0;
 
-  inline void SetOutputMayBeDeadlock(int port) {
+  inline bool SetOutputMayBeDeadlock(int port) {
     assert((port >= 0) && (port < _outputs));
-    _output_may_be_deadlock[port] = true;
+    if(!_output_may_be_deadlock[port]) {
+      _output_may_be_deadlock[port] = true;
+      return true;
+    } else {
+      return false;
+    }
   }
 
   inline bool CheckOutputMayBeDeadlock(int port) const {

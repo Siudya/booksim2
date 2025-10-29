@@ -75,26 +75,27 @@ void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {
   const int br1_y = get_y(br1);
   int cur = br0;
   int next = -1;
+  bool print = false;
   while(cur != br1) {
     const int cur_x = get_x(cur);
     const int cur_y = get_y(cur);
     if(cur_x < br1_x) {
-      _routers[cur]->SetOutputMayBeDeadlock(right_port);
+      print = _routers[cur]->SetOutputMayBeDeadlock(right_port);
       next = get_node_id(chip, cur_y, cur_x + 1);
     } else if(cur_x > br1_x) {
-      _routers[cur]->SetOutputMayBeDeadlock(left_port);
+      print = _routers[cur]->SetOutputMayBeDeadlock(left_port);
       next = get_node_id(chip, cur_y, cur_x - 1);
     } else if(cur_y < br1_y) {
-      _routers[cur]->SetOutputMayBeDeadlock(down_port);
+      print = _routers[cur]->SetOutputMayBeDeadlock(down_port);
       next = get_node_id(chip, cur_y + 1, cur_x);
     } else if(cur_y > br1_y) {
-      _routers[cur]->SetOutputMayBeDeadlock(up_port);
+      print = _routers[cur]->SetOutputMayBeDeadlock(up_port);
       next = get_node_id(chip, cur_y - 1, cur_x);
     } else {
       assert(false);
       next = -1;
     }
-    cout << "Setting up deadlock channel from " << cur << " to " << next << endl;
+    if(print) cout << "Setting up deadlock link from " << cur << " to " << next << endl;
     cur = next;
   }
   assert(cur == br1);

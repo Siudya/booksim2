@@ -59,24 +59,24 @@ void BufferState::BufferPolicy::SendingFlit(Flit const * const f) {
 void BufferState::BufferPolicy::FreeSlotFor(int vc) {
 }
 
-BufferState::BufferPolicy * BufferState::BufferPolicy::New(Configuration const & config, BufferState * parent, const string & name)
+unique_ptr<BufferState::BufferPolicy> BufferState::BufferPolicy::New(Configuration const & config, BufferState * parent, const string & name)
 {
-  BufferPolicy * sp = NULL;
+  unique_ptr<BufferPolicy> sp = nullptr;
   string buffer_policy = config.GetStr("buffer_policy");
   if(buffer_policy == "private") {
-    sp = new PrivateBufferPolicy(config, parent, name);
+    sp = make_unique<PrivateBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "shared") {
-    sp = new SharedBufferPolicy(config, parent, name);
+    sp = make_unique<SharedBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "limited") {
-    sp = new LimitedSharedBufferPolicy(config, parent, name);
+    sp = make_unique<LimitedSharedBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "dynamic") {
-    sp = new DynamicLimitedSharedBufferPolicy(config, parent, name);
+    sp = make_unique<DynamicLimitedSharedBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "shifting") {
-    sp = new ShiftingDynamicLimitedSharedBufferPolicy(config, parent, name);
+    sp = make_unique<ShiftingDynamicLimitedSharedBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "feedback") {
-    sp = new FeedbackSharedBufferPolicy(config, parent, name);
+    sp = make_unique<FeedbackSharedBufferPolicy>(config, parent, name);
   } else if(buffer_policy == "simplefeedback") {
-    sp = new SimpleFeedbackSharedBufferPolicy(config, parent, name);
+    sp = make_unique<SimpleFeedbackSharedBufferPolicy>(config, parent, name);
   } else {
     cout << "Unknown buffer policy: " << buffer_policy << endl;
   }
@@ -562,11 +562,6 @@ BufferState::BufferState( const Configuration& config, Module *parent, const str
   _outstanding_classes.resize(_vcs);
   _class_occupancy.resize(_classes, 0);
 #endif
-}
-
-BufferState::~BufferState()
-{
-  delete _buffer_policy;
 }
 
 void BufferState::ProcessCredit( Credit const * const c )

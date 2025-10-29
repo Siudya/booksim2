@@ -27,8 +27,8 @@ private:
   // Input and output channels
   FlitChannel * _inject_upstream_flit_channel; // Input
   FlitChannel * _inject_downstream_flit_channel; // Outpout
-  CreditChannel * _inject_upstream_credit_channel; // Input
-  CreditChannel * _inject_downstream_credit_channel; // Output
+  CreditChannel * _inject_upstream_credit_channel; // Outpout
+  CreditChannel * _inject_downstream_credit_channel; // Input
 
   FlitChannel * _eject_upstream_flit_channel; // Output
   FlitChannel * _eject_downstream_flit_channel; // Input
@@ -39,16 +39,18 @@ private:
 
   // Used in ReadInputs() stage
   queue<Flit *> _inject_rx_latch; // Downstream RX port flit channel
-  queue<Flit *> _eject_rx_latch; // Upstream RX port flit channel
+  queue<Flit *> _eject_rx_req_latch; // Upstream RX port req flit channel
+  queue<Flit *> _eject_rx_rsp_latch; // Upstream RX port rsp flit channel
+  queue<Flit *> _eject_rx_dat_latch; // Upstream RX port dat flit channel
   
   // Used in Evaluate() stage
-  unordered_map<int, queue<Flit*>> _inject_center_buffers;
+  unordered_map<int, deque<Flit*>> _inject_center_buffers;
   
   // Used in WriteOutputs() stage
   queue<Flit *> _inject_tx_latch; // Downstream TX port flit channel
   queue<Flit *> _eject_tx_latch; // Upstream TX port flit channel
-  queue<Credit *> _inject_rx_credit_latch; // Downstream RX port credit channel
-  queue<Credit *> _eject_rx_credit_latch; // Upstream RX port credit channel
+  deque<Credit *> _inject_rx_credit_latch; // Downstream RX port credit channel
+  deque<Credit *> _eject_rx_credit_latch; // Upstream RX port credit channel
 
   // Buffer state for buffer
   int _rc_buf_size;
@@ -66,7 +68,6 @@ private:
 
 public:
   InjectController(const Configuration& config, ChipletNetwork * parent, string const & name, const Router * router);
-  ~InjectController() = default;
 
   // TimedModule interface implementation
   void ReadInputs();
@@ -79,8 +80,8 @@ public:
   void SetEjectUpstreamChannel(FlitChannel * channel, CreditChannel * back_channel);
   void SetEjectDownstreamChannel(FlitChannel * channel, CreditChannel * back_channel);
 
-  void returnCredit(queue<Credit *> & credit_latch, int vc);
-  void returnCredit(queue<Credit *> & credit_latch, const set<int> & vcs);
+  void returnCredit(deque<Credit *> & credit_latch, int vc);
+  void returnCredit(deque<Credit *> & credit_latch, const set<int> & vcs);
 };
 
 #endif

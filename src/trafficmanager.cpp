@@ -1468,7 +1468,7 @@ bool TrafficManager::_SingleSim( )
         //cout << _sim_state << endl;
 
         UpdateStats();
-        DisplayStats();
+        // DisplayStats();
     
         int lat_exc_class = -1;
         int lat_chg_exc_class = -1;
