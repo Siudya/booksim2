@@ -862,12 +862,13 @@ void TrafficManager::_GeneratePacket( int source, int stype,
         f->id     = _cur_id++;
         assert(_cur_id);
         f->pid    = pid;
-        f->watch  = watch | (gWatchOut && (_flits_to_watch.count(f->id) > 0));
+        f->watch  = watch | (gWatchOut && (_flits_to_watch.count(f->pid) > 0));
         f->subnetwork = subnetwork;
         f->src    = source;
         f->ctime  = time;
         f->record = record;
         f->cl     = cl;
+        f->size   = size;
 
         _total_in_flight_flits[f->cl].insert(make_pair(f->id, f));
         if(record) {

@@ -31,6 +31,7 @@
 #include "credit.hpp"
 #include "flit.hpp"
 #include "flitchannel.hpp"
+#include "globals.hpp"
 #include <cassert>
 #include <cstddef>
 #include <iostream>
@@ -38,7 +39,55 @@
 
 using namespace std;
 
-InjectController::InjectController(const Configuration &config, ChipletNetwork *network, string const &name, const Router *r):TimedModule(network, name), _inject_upstream_flit_channel(nullptr), _router(r) {
+void OutboundBuffer::add_flit(Flit *f) {
+  if(check_exists(f->pid)) {
+    _packets[f->pid].push_back(f);
+  } else {
+    _packets[f->pid] = deque<Flit*>();
+    _packets[f->pid].push_back(f);
+    _allows[f->pid] = false;
+  }
+}
+
+void OutboundBuffer::rm_pkt(int pid) {
+  if(check_exists(pid)) {
+    _packets.erase(pid);
+    _allows.erase(pid);
+  } else {
+    cout << "OutboundBuffer::rm_pkt: PID " << pid << " not found" << endl;
+    assert(false);
+  }
+}
+
+void OutboundBuffer::output(queue<Flit *> & tx_latch) {
+  queue<int> to_remove;
+  for(auto &[pid, pkt]: _packets) {
+    if(_allows[pid] && !pkt.empty()) {
+      if(pkt.back()->tail) {
+        for(auto f: pkt) {
+          tx_latch.push(f);
+          if(f->watch) *gWatchOut << GetSimTime() << " | " << parent->FullName() << " | " << " Sending flit from outbound buffer. |" << *f << endl;
+        }
+        to_remove.push(pid);
+      }
+    }
+  }
+  while(!to_remove.empty()) {
+    rm_pkt(to_remove.front());
+    to_remove.pop();
+  }
+}
+
+void OutboundBuffer::allow_pkt(int pid) {
+  if(check_exists(pid)) {
+    _allows[pid] = true;
+  } else {
+    cout << "OutboundBuffer::allow_pkt: PID " << pid << " not found" << endl;
+    assert(false);
+  }
+}
+
+InjectController::InjectController(const Configuration &config, ChipletNetwork *network, string const &name, const Router *r):TimedModule(network, name), _inject_upstream_flit_channel(nullptr), _outbound_buffer(this), _router(r) {
   _inject_upstream_flit_channel = nullptr;
   _inject_downstream_flit_channel = nullptr;
   _inject_upstream_credit_channel = nullptr;
@@ -121,9 +170,7 @@ void InjectController::ReadInputs() {
   if (f) {
     if (f->watch) {
       *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                 << "Received flit " << f->id << " (packet " << f->pid << ")"
-                 << " from inject upstream port."
-                 << " vc: " << f->vc << " type: " << Flit::GetTrafficTypeString(f->traffic_type) << endl;
+                 << "Received flit from inject upstream port. |" << *f << endl;
     }
     _inject_rx_latch.push(f);
   }
@@ -132,9 +179,7 @@ void InjectController::ReadInputs() {
   if (f) {
     if (f->watch) {
       *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                 << "Received flit " << f->id << " (packet " << f->pid << ")"
-                 << " from eject downstream port."
-                 << " vc: " << f->vc;
+                 << "Received flit from eject downstream port. |" << *f;
     }
     if(f->type == Flit::OUTBOUND_REQ) {
       _eject_rx_req_latch.push(f);
@@ -168,41 +213,29 @@ void InjectController::Evaluate() {
   if (!_inject_rx_latch.empty()) {
     Flit *f = _inject_rx_latch.front();
     if (isNeedRequestFlit(_router, f)) {
+      f->to_rc_buffer = !(f->loc_dest == _router->GetID());
       auto rf = getRequestFlit(_router, f);
       _rf(_router, rf, _router->NumInputs() -1, &rf->la_route_set, false);
-      if (rf->watch) {
-        *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Sending RC REQ flit " << rf->id << " to inject downstream port."
-                   << " src: " << rf->src << " dest: " << rf->dest << " vc: " << rf->vc
-                   << " pid: " << rf->pid << " vc: " << rf->vc << " type: " << rf->type << endl;
-      }
+      _rf(_router, f, _router->NumInputs() -1, &f->la_route_set, false);
+      if (rf->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " Sending RC REQ flit. |" << *rf << endl;
       if(rf->dest == _router->GetID()) {
         _eject_rx_req_latch.push(rf); 
       } else {
         _inject_tx_latch.push(rf);
       }
-      _inject_center_buffers[f->pid] = deque<Flit *>();
-      _inject_center_buffers[f->pid].push_back(f);
-      if (f->watch) {
-        *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Added flit " << f->id << " to inject center buffers."
-                   << " pid: " << f->pid << " vc: " << f->vc << " type: " << Flit::GetTrafficTypeString(f->traffic_type) << endl;
-      }
-    } else if (_inject_center_buffers.count(f->pid) > 0) {
-      _inject_center_buffers[f->pid].push_back(f);
-    } else {
-      _inject_tx_latch.push(f);
     }
+    _outbound_buffer.add_flit(f);
+    if(f->traffic_type != Flit::OUTBOUND && f->head) _outbound_buffer.allow_pkt(f->pid);
     returnCredit(_inject_rx_credit_latch, f->vc);
     _inject_rx_latch.pop();
   }
-
+  
   if(!_eject_rx_req_latch.empty() && _rc_buf_occ < _rc_buf_size) {
     Flit *f = _eject_rx_req_latch.front();
     assert(f->vc == gOutboundReqVC);
     if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundReqVC);
     _eject_rx_req_latch.pop();
-    _rc_buf_occ++;
+    _rc_buf_occ += f->size;
     f->type = Flit::OUTBOUND_RSP;
     f->dest = f->src;
     f->loc_dest = f->src;
@@ -216,60 +249,36 @@ void InjectController::Evaluate() {
     }
     if(f->watch) {
       *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                 << " RC buffer is available. Sending RC RSP flit " << f->id << " to inject downstream port."
-                 << " pid: " << f->pid
-                 << " src: " << f->src << " dest: " << f->dest << " vc: " << f->vc
-                 << " traffic type: " << Flit::GetTrafficTypeString(f->traffic_type) 
-                 << " flit type: " << f->type << endl;
+                 << " Received RC REQ flit. Sending RC RSP flit. |" << *f << endl;
     }
   }
 
   if(!_eject_rx_rsp_latch.empty()) {
     Flit *f = _eject_rx_rsp_latch.front();
     assert(f->vc == gOutboundRspVC);
-    if (_inject_center_buffers[f->pid].size() == _packet_size) {
-      if (f->watch) {
-        *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Received RC RSP flit " << f->id << " from eject downstream port."
-                   << " pid: " << f->pid 
-                   << " src: " << f->src << " dest: " << f->dest << " vc: " << f->vc
-                   << " traffic type: " << Flit::GetTrafficTypeString(f->traffic_type) 
-                   << " flit type: " << f->type << endl;
-      }
-      for(auto &flit: _inject_center_buffers[f->pid]) {
-        assert(flit->traffic_type == Flit::OUTBOUND);
-        flit->to_rc_buffer = !(flit->loc_dest == _router->GetID());
-        _rf(_router, flit, _router->NumInputs() -1, &flit->la_route_set, false);
-        _inject_tx_latch.push(flit);
-      }
-      _inject_center_buffers.erase(f->pid);
-      if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundRspVC);
-      _eject_rx_rsp_latch.pop();
-      f->Free();
-    }
+    _outbound_buffer.allow_pkt(f->pid);
+    if (f->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " Received RC RSP flit. |" << *f << endl;
+    if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundRspVC);
+    _eject_rx_rsp_latch.pop();
+    f->Free();
   }
 
   if(!_eject_rx_dat_latch.empty()) {
     Flit *f = _eject_rx_dat_latch.front();
     returnCredit(_eject_rx_credit_latch, f->vc);
     _eject_rx_dat_latch.pop();
-    if(f->to_rc_buffer) {
+    if(f->head && f->to_rc_buffer) {
       assert(f->traffic_type == Flit::OUTBOUND);
       f->to_rc_buffer = false;
       _rf(_router, f, _router->NumInputs() -1, &f->la_route_set, false);
-      _inject_tx_latch.push(f);
-      if (f->watch) {
-        *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Received RC DAT flit " << f->id << " from eject downstream port."
-                   << " pid: " << f->pid 
-                   << " src: " << f->src << " loc_dest: " << f->loc_dest
-                   << " dest: " << f->dest << " vc: " << f->vc
-                   << " traffic type: " << Flit::GetTrafficTypeString(f->traffic_type) 
-                   << " flit type: " << f->type << endl;
-      }
+      _outbound_buffer.add_flit(f);
+      _outbound_buffer.allow_pkt(f->pid);
+    } else if(_outbound_buffer.check_exists(f->pid)) {
+      _outbound_buffer.add_flit(f);
     } else {
       _eject_tx_latch.push(f);
     }
+    if (f->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " Received RC DAT flit. |" << *f << endl;
   }
 }
 
@@ -278,42 +287,38 @@ void InjectController::WriteOutputs() {
   assert(_inject_upstream_credit_channel != nullptr);
   assert(_eject_upstream_flit_channel != nullptr);
   assert(_eject_downstream_credit_channel != nullptr);
+  
+  _outbound_buffer.output(_inject_tx_latch);
   if (!_inject_tx_latch.empty()) {
     Flit *f = _inject_tx_latch.front();
     auto buf = _inject_downstream_buffer_state.get();
-    if(!buf->IsAvailableFor(f->vc)) {
+    if(!buf->IsAvailableFor(f->vc) && f->head) {
       if(f->watch) {
         *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Inject Output VC " << f->vc << " is busy." << endl;
+                   << " Inject TX VC " << f->vc << " is busy." << endl;
+         buf->Display(*gWatchOut);
       }
     } else if(buf->IsFullFor(f->vc)) {
       if(f->watch) {
         *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Inject Output VC " << f->vc << " is full." << endl;
+                   << " Inject TX VC " << f->vc << " is full." << endl;
       }
     } else {
       if(f->watch) {
         *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << " Sending Inject flit " << f->id << " to inject downstream port."
-                   << " pid: " << f->pid
-                   << " src: " << f->src << " loc_dest: " << f->loc_dest
-                   << " dest: " << f->dest << " vc: " << f->vc
-                   << " to_rc_buffer: " << f->to_rc_buffer
-                   << " head: " << f->head << " tail: " << f->tail
-                   << " traffic type: " << Flit::GetTrafficTypeString(f->traffic_type)
-                   << " flit type: " << f->type << endl;
+                   << " Sending Inject flit to inject downstream port. |" << *f << endl;
       }
       if(f->head) buf->TakeBuffer(f->vc);
       _inject_downstream_flit_channel->Send(f);
       buf->SendingFlit(f);
       _inject_tx_latch.pop();
-      if(f->tail && f->traffic_type == Flit::OUTBOUND && !f->to_rc_buffer) _rc_buf_occ--;
+      if(f->tail && f->type != Flit::OUTBOUND_REQ && f->type != Flit::OUTBOUND_RSP && f->src != _router->GetID()) _rc_buf_occ -= f->size;
     }
   }
   if (!_eject_tx_latch.empty()) {
     Flit *f = _eject_tx_latch.front();
     auto buf = _eject_upstream_buffer_state.get();
-    if(!buf->IsAvailableFor(f->vc)) {
+    if(!buf->IsAvailableFor(f->vc) && f->head) {
       if(f->watch) {
         *gWatchOut << GetSimTime() << " | " << FullName() << " | "
                    << "  Eject Output VC " << f->vc << " is busy." << endl;
@@ -326,10 +331,7 @@ void InjectController::WriteOutputs() {
     } else {
       if(f->watch) {
         *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                   << "  Sending Eject flit " << f->id << " to eject upstream port."
-                   << " src: " << f->src << " dest: " << f->dest << " vc: " << f->vc
-                   << " traffic type: " << Flit::GetTrafficTypeString(f->traffic_type)
-                   << " flit type: " << f->type << endl;
+                   << " Sending Eject flit to eject upstream port. |" << *f << endl;
       }
       if(f->head) buf->TakeBuffer(f->vc);
       _eject_upstream_flit_channel->Send(f);

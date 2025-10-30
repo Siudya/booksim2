@@ -42,14 +42,12 @@ stack<Flit *> Flit::_free;
 
 ostream& operator<<( ostream& os, const Flit& f )
 {
-  os << "  Flit ID: " << f.id << " (" << &f << ")" 
-     << " Packet ID: " << f.pid
+  os << " Flit " << f.id << " of Packet " << f.pid
      << " Type: " << f.type 
      << " Head: " << f.head
-     << " Tail: " << f.tail << endl;
-  os << "  Source: " << f.src << "  Dest: " << f.dest << " Intm: "<<f.intm<<endl;
-  os << "  Creation time: " << f.ctime << " Injection time: " << f.itime << " Arrival time: " << f.atime << " Phase: "<<f.ph<< endl;
-  os << "  VC: " << f.vc << " Traffic: " << Flit::GetTrafficTypeString(f.traffic_type) << " Local Dest: " << f.loc_dest << endl;
+     << " Tail: " << f.tail;
+  os << " Src: " << f.src << "  Dst: " << f.dest << " Local Dst: "<< f.loc_dest;
+  os << " VC: " << f.vc << " Traffic Type:: " << Flit::GetTrafficTypeString(f.traffic_type);
   return os;
 }
 

@@ -20,6 +20,25 @@ typedef Channel<Credit> CreditChannel;
 
 class ChipletNetwork;
 
+class InjectController;
+
+class OutboundBuffer {
+  private:
+  InjectController *parent;
+  unordered_map<int, deque<Flit*>> _packets;
+  unordered_map<int, bool> _allows;
+
+  public:
+  OutboundBuffer(InjectController *parent): parent(parent) {}
+  inline bool check_exists(int pid) const {
+    return _packets.count(pid) > 0;
+  }
+  void add_flit(Flit *f);
+  void rm_pkt(int pid);
+  void output(queue<Flit *> & tx_latch);
+  void allow_pkt(int pid);
+};
+
 class InjectController: public TimedModule {
 private:
   tRoutingFunction _rf;
@@ -36,15 +55,13 @@ private:
   CreditChannel * _eject_downstream_credit_channel; // Output
   
   // Local buffer - using Buffer class to manage input flits
+  OutboundBuffer _outbound_buffer;
 
   // Used in ReadInputs() stage
   queue<Flit *> _inject_rx_latch; // Downstream RX port flit channel
   queue<Flit *> _eject_rx_req_latch; // Upstream RX port req flit channel
   queue<Flit *> _eject_rx_rsp_latch; // Upstream RX port rsp flit channel
   queue<Flit *> _eject_rx_dat_latch; // Upstream RX port dat flit channel
-  
-  // Used in Evaluate() stage
-  unordered_map<int, deque<Flit*>> _inject_center_buffers;
   
   // Used in WriteOutputs() stage
   queue<Flit *> _inject_tx_latch; // Downstream TX port flit channel
