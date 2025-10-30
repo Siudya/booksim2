@@ -136,6 +136,7 @@ Flit *getRequestFlit(const Router *r, const Flit *f) {
   res->vc = gOutboundReqVC;
   res->vc_prealloc = gOutboundReqVC;
   res->cl = f->cl;
+  res->size = f->size;
   return res;
 }
 
@@ -230,26 +231,30 @@ void InjectController::Evaluate() {
     _inject_rx_latch.pop();
   }
   
-  if(!_eject_rx_req_latch.empty() && _rc_buf_occ < _rc_buf_size) {
+  if(!_eject_rx_req_latch.empty()) {
     Flit *f = _eject_rx_req_latch.front();
-    assert(f->vc == gOutboundReqVC);
-    if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundReqVC);
-    _eject_rx_req_latch.pop();
-    _rc_buf_occ += f->size;
-    f->type = Flit::OUTBOUND_RSP;
-    f->dest = f->src;
-    f->loc_dest = f->src;
-    f->src = _router->GetID();
-    f->vc = gOutboundRspVC;
-    _rf(_router, f, _router->NumInputs() -1, &f->la_route_set, false);
-    if(f->dest == _router->GetID()) {
-      _eject_rx_rsp_latch.push(f);
+    if(_rc_buf_occ + f->size < _rc_buf_size) {
+      assert(f->vc == gOutboundReqVC);
+      if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundReqVC);
+      _eject_rx_req_latch.pop();
+      _rc_buf_occ += f->size;
+      f->type = Flit::OUTBOUND_RSP;
+      f->dest = f->src;
+      f->loc_dest = f->src;
+      f->src = _router->GetID();
+      f->vc = gOutboundRspVC;
+      _rf(_router, f, _router->NumInputs() -1, &f->la_route_set, false);
+      if(f->dest == _router->GetID()) {
+        _eject_rx_rsp_latch.push(f);
+      } else {
+        _inject_tx_latch.push(f);
+      }
+      if(f->watch) {
+        *gWatchOut << GetSimTime() << " | " << FullName() << " | "
+                   << " Received RC REQ flit. Sending RC RSP flit. |" << *f << endl;
+      }
     } else {
-      _inject_tx_latch.push(f);
-    }
-    if(f->watch) {
-      *gWatchOut << GetSimTime() << " | " << FullName() << " | "
-                 << " Received RC REQ flit. Sending RC RSP flit. |" << *f << endl;
+      if(f->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " RC buffer is full. Waiting... | " << *f << endl;
     }
   }
 
@@ -312,7 +317,7 @@ void InjectController::WriteOutputs() {
       _inject_downstream_flit_channel->Send(f);
       buf->SendingFlit(f);
       _inject_tx_latch.pop();
-      if(f->tail && f->type != Flit::OUTBOUND_REQ && f->type != Flit::OUTBOUND_RSP && f->src != _router->GetID()) _rc_buf_occ -= f->size;
+      if(f->src != _router->GetID()) _rc_buf_occ--;
     }
   }
   if (!_eject_tx_latch.empty()) {

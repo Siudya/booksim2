@@ -31,7 +31,7 @@
 
 num_vcs     = 2;
 vc_buf_size = 8;
-rc_buf_size = 256;
+rc_buf_size = 128;
 
 wait_for_tail_credit = 0;
 

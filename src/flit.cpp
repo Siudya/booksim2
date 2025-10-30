@@ -45,7 +45,8 @@ ostream& operator<<( ostream& os, const Flit& f )
   os << " Flit " << f.id << " of Packet " << f.pid
      << " Type: " << f.type 
      << " Head: " << f.head
-     << " Tail: " << f.tail;
+     << " Tail: " << f.tail
+     << " Size: " << f.size;
   os << " Src: " << f.src << "  Dst: " << f.dest << " Local Dst: "<< f.loc_dest;
   os << " VC: " << f.vc << " Traffic Type:: " << Flit::GetTrafficTypeString(f.traffic_type);
   return os;
