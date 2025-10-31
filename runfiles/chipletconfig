@@ -31,7 +31,7 @@
 
 num_vcs     = 2;
 vc_buf_size = 4;
-rc_buf_size = 32;
+rc_buf_size = 16;
 
 wait_for_tail_credit = 0;
 
@@ -67,7 +67,7 @@ sample_period = 100000;
 
 max_samples = 10;
 
-packet_size = {4};
+packet_size = {2};
 packet_size_rate = {1};
 //seed = time;
 
