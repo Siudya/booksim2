@@ -17,6 +17,9 @@ class ChipletNetwork : public Network {
   vector<std::unique_ptr<FlitChannel>> _eject_inter;
   vector<std::unique_ptr<CreditChannel>> _eject_cred_inter;
   vector<std::unique_ptr<InjectController>> _inject_controllers;
+
+  int _d2d_lat;
+  int _num_vcs;
   
   public:
   // node[chip_id][y][x]
@@ -42,7 +45,7 @@ class ChipletNetwork : public Network {
   ChipletNetwork ( const Configuration &config, const string & name);
   void single_chip_conn( const Configuration &config, int chip_id);
   void node_conn(int node, int in_chn, int out_chn, int in_lat, int out_lat);
-  void node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat);
+  void node_conn_d2d(int n0, int n1, int n0_port, int n1_port);
   void setup_deadlock_channels(const vector<int> &brs);
   void setup_resources(const Configuration &config);
   virtual const int get_boundary_router(const int inject_node_id, const int dest_node_id) = 0;

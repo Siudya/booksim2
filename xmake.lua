@@ -89,6 +89,7 @@ task("bs2")
             {'W', "--watch-out", "kv", "", "Watch out file name (without path and extension)"},
             {'X', "--watch-flits", "kv", "", "Watch flits name"},
             {'L', "--latency-threshold", "kv", "512.0", "Latency threshold"},
+            {'S', "--inject-rate-step", "kv", "", "Sim from --injection-rate by --inject-rate-step until booksim return non-zero value"}
         }
     }
     on_run(function (options)
@@ -99,7 +100,7 @@ task("bs2")
         if option.get("--deterministic") then table.join2(opts, { "deterministic=1" }) end
         table.join2(opts, { "topology=" .. option.get("--config-file") .. "_" .. option.get("--topology") })
         table.join2(opts, { "traffic=" .. option.get("--traffic") })
-        table.join2(opts, { "injection_rate=" .. option.get("--injection-rate") })
+        
         if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_out=" .. option.get("--watch-out") }) end
         if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_flits=" .. option.get("--watch-flits") }) end
         if option.get("--va-function") == "rc" then table.join2(opts, { "use_rc_buffer=1", "num_vcs=4" }) end
@@ -114,12 +115,23 @@ task("bs2")
         else
             log_file = log_file .. "_rnd"
         end
-        log_file = log_file .. "_" .. option.get("--injection-rate") .. ".log"
-        
         local log_dir = path.join(os.projectdir(), "logs")
         if not os.exists(log_dir) then os.mkdir(log_dir) end
-        log_file = path.join(log_dir, log_file)
 
-        print("%s %s", bin, table.concat(opts, " "))
-        os.execv(bin, opts, {stdout = log_file})
+        local iter_count = 0
+        local step = 0.0
+        if option.get("--inject-rate-step") ~= "" then
+            iter_count = 1000
+            step = tonumber(option.get("--inject-rate-step"))
+        end
+
+        for i = 0,iter_count,1 do
+            local iter_inj_rate = tonumber(option.get("--injection-rate")) + step * i
+            local iter_log = log_file .. "_" .. iter_inj_rate .. ".log"
+            local iter_opts = {}
+            table.join2(iter_opts, opts)
+            table.join2(iter_opts, { "injection_rate=" .. iter_inj_rate })
+            print("%s %s", bin, table.concat(iter_opts, " "))
+            os.execv(bin, iter_opts, {stdout = path.join(log_dir, iter_log)})
+        end
     end)

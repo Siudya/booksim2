@@ -30,8 +30,8 @@
 //
 
 num_vcs     = 2;
-vc_buf_size = 8;
-rc_buf_size = 128;
+vc_buf_size = 4;
+rc_buf_size = 32;
 
 wait_for_tail_credit = 0;
 
@@ -43,12 +43,13 @@ vc_allocator = islip;
 sw_allocator = islip;
 alloc_iters  = 2;
 
-credit_delay   = 2;
+credit_delay   = 1;
 routing_delay  = 0;
 vc_alloc_delay = 1;
 sw_alloc_delay = 1;
 st_final_delay = 1;
 speculative = 1;
+d2d_latency = 32;
 
 input_speedup     = 1;
 output_speedup    = 1;
@@ -62,11 +63,13 @@ sim_type = latency;
 
 warmup_periods = 3;
 
-sample_period = 1000;
+sample_period = 100000;
 
 max_samples = 10;
 
-packet_size = 4;
+packet_size = {4};
+packet_size_rate = {1};
+//seed = time;
 
 sim_count          = 1;
 

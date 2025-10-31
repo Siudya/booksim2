@@ -26,16 +26,16 @@ void ChipletTwin::_BuildNet( const Configuration &config )
   bundry_router_2 = get_node_id(1, 0, 0);
   bundry_router_3 = get_node_id(1, 1, 0);
 
-  node_conn_d2d(bundry_router_0, bundry_router_2, right_port, left_port, 32);
-  node_conn_d2d(bundry_router_1, bundry_router_3, right_port, left_port, 32);
+  node_conn_d2d(bundry_router_0, bundry_router_2, right_port, left_port);
+  node_conn_d2d(bundry_router_1, bundry_router_3, right_port, left_port);
 
   //Dummy connection
   const int chip_0_dummy_0 = get_node_id(0, 0, 0);
   const int chip_0_dummy_1 = get_node_id(0, 1, 0);
   const int chip_1_dummy_0 = get_node_id(1, 0, x_len - 1);
   const int chip_1_dummy_1 = get_node_id(1, 1, x_len - 1);
-  node_conn_d2d(chip_0_dummy_0, chip_1_dummy_0, left_port, right_port, 1);
-  node_conn_d2d(chip_0_dummy_1, chip_1_dummy_1, left_port, right_port, 1);
+  node_conn_d2d(chip_0_dummy_0, chip_1_dummy_0, left_port, right_port);
+  node_conn_d2d(chip_0_dummy_1, chip_1_dummy_1, left_port, right_port);
 
   vector<int> brs = {
     bundry_router_0,

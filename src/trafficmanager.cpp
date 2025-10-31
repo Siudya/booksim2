@@ -1541,8 +1541,9 @@ bool TrafficManager::_SingleSim( )
     
         // Fail safe for latency mode, throughput will ust continue
         if ( _measure_latency && ( lat_exc_class >= 0 ) ) {
-      
-            cout << "Average latency for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
+            const double acc_latency = (double)_plat_stats[lat_exc_class]->Sum();
+            const double acc_count = (double)_plat_stats[lat_exc_class]->NumSamples();
+            cout << "Average latency " << (acc_latency / acc_count) << " for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
             cout << "Flits causing latency timeout in class " << lat_exc_class << ":" << endl;
             map<int, Flit *>::const_iterator iter;
             int count = 0;
@@ -1634,7 +1635,9 @@ bool TrafficManager::_SingleSim( )
                     }
 	  
                     if(lat_exc_class >= 0) {
-                        cout << "Average latency for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
+                        const double acc_latency = _plat_stats[lat_exc_class]->Sum();
+                        const double acc_count = (double)_plat_stats[lat_exc_class]->NumSamples();
+                        cout << "Average latency " << (acc_latency / acc_count) << " for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
                         cout << "Flits causing latency timeout in class " << lat_exc_class << ":" << endl;
                         map<int, Flit *>::const_iterator iter;
                         int count = 0;

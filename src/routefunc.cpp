@@ -213,10 +213,11 @@ void va_vda(const Router *r, const Flit *f, const int out_port, const int vc_beg
   int vn1_end = vc_end;
   vc_sel_begin = vc_begin;
   vc_sel_end = vc_end;
+  const bool about_to_leave_chiplet = out_port == r->GetD2DPort() && r->IsBoundaryRouter();
   if(f->traffic_type == Flit::INBOUND && f->deterministic) {
     vc_sel_begin = vn0_begin;
     vc_sel_end = vn0_end;
-  } else if(f->traffic_type == Flit::OUTBOUND) {
+  } else if(f->traffic_type == Flit::OUTBOUND && !about_to_leave_chiplet) {
     vc_sel_begin = vn1_begin;
     vc_sel_end = vn1_end;
   }
@@ -231,13 +232,14 @@ void va_red(const Router *r, const Flit *f, const int out_port, const int vc_beg
   int vn1_end = vc_end;
   vc_sel_begin = vc_begin;
   vc_sel_end = vc_end;
+  const bool about_to_leave_chiplet = out_port == r->GetD2DPort() && r->IsBoundaryRouter();
   if(vn1_begin <= f->vc && f->vc < vn1_end) { // Flit in VN1 should not route to VN0
     vc_sel_begin = vn1_begin;
     vc_sel_end = vn1_end;
   } else if(f->traffic_type == Flit::INBOUND) { // Inbound flit should route to VN1
     vc_sel_begin = vn1_begin;
     vc_sel_end = vn1_end;
-  } else if(f->traffic_type == Flit::OUTBOUND) { // Outbound flit should route to VN0
+  } else if(f->traffic_type == Flit::OUTBOUND && !about_to_leave_chiplet) { // Outbound flit should route to VN0
     vc_sel_begin = vn0_begin;
     vc_sel_end = vn0_end;
   }
@@ -252,11 +254,12 @@ void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_beg
   int vn1_end = vc_end;
   vc_sel_begin = vc_begin;
   vc_sel_end = vc_end;
+  const bool about_to_leave_chiplet = out_port == r->GetD2DPort() && r->IsBoundaryRouter();
   if(r->CheckOutputMayBeDeadlock(out_port)) {
     if(f->traffic_type == Flit::INBOUND && f->deterministic) {
       vc_sel_begin = vn0_begin;
       vc_sel_end = vn0_end;
-    } else if(f->traffic_type == Flit::OUTBOUND) {
+    } else if(f->traffic_type == Flit::OUTBOUND && !about_to_leave_chiplet) {
       vc_sel_begin = vn1_begin;
       vc_sel_end = vn1_end;
     }
@@ -369,6 +372,7 @@ void InitializeRoutingMap( const Configuration & config )
   // Balfour-Schultz
   gRoutingFunctionMap["dor_mesh"]            = &dim_order_mesh;
   gRoutingFunctionMap["dim_order_mesh"]  = &dim_order_mesh;
+  gRoutingFunctionMap["dor_oracle_soc_mesh"]  = &dim_order_mesh;
   // End Balfour-Schultz
   // ===================================================
   

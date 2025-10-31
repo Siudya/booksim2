@@ -54,7 +54,7 @@ void OutboundBuffer::rm_pkt(int pid) {
     _packets.erase(pid);
     _allows.erase(pid);
   } else {
-    cout << "OutboundBuffer::rm_pkt: PID " << pid << " not found" << endl;
+    cout << GetSimTime() << " | " << parent->FullName() << " | [ERROR] OutboundBuffer::rm_pkt: PID " << pid << " not found" << endl;
     assert(false);
   }
 }
@@ -82,7 +82,7 @@ void OutboundBuffer::allow_pkt(int pid) {
   if(check_exists(pid)) {
     _allows[pid] = true;
   } else {
-    cout << "OutboundBuffer::allow_pkt: PID " << pid << " not found" << endl;
+    cout << GetSimTime() << " | " << parent->FullName() << " | [ERROR] OutboundBuffer::allow_pkt: PID " << pid << " not found" << endl;
     assert(false);
   }
 }
@@ -116,7 +116,7 @@ bool isNeedRequestFlit(const Router *r, const Flit *f) {
   const int dst = f->dest;
   const int cur_chip = ChipletNetwork::get_chip(cur);
   const int dst_chip = ChipletNetwork::get_chip(dst);
-  return dst_chip != cur_chip && f->head;
+  return dst_chip != cur_chip && f->head && f->loc_dest != cur;
 }
 
 Flit *getRequestFlit(const Router *r, const Flit *f) {
@@ -213,20 +213,17 @@ void InjectController::Evaluate() {
   assert(_rc_buf_occ <= _rc_buf_size);
   if (!_inject_rx_latch.empty()) {
     Flit *f = _inject_rx_latch.front();
+    _outbound_buffer.add_flit(f);
     if (isNeedRequestFlit(_router, f)) {
-      f->to_rc_buffer = !(f->loc_dest == _router->GetID());
+      f->to_rc_buffer = true;
       auto rf = getRequestFlit(_router, f);
       _rf(_router, rf, _router->NumInputs() -1, &rf->la_route_set, false);
       _rf(_router, f, _router->NumInputs() -1, &f->la_route_set, false);
       if (rf->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " Sending RC REQ flit. |" << *rf << endl;
-      if(rf->dest == _router->GetID()) {
-        _eject_rx_req_latch.push(rf); 
-      } else {
-        _inject_tx_latch.push(rf);
-      }
+      _inject_tx_latch.push(rf);
+    } else if(f->head) {
+      _outbound_buffer.allow_pkt(f->pid);
     }
-    _outbound_buffer.add_flit(f);
-    if(f->traffic_type != Flit::OUTBOUND && f->head) _outbound_buffer.allow_pkt(f->pid);
     returnCredit(_inject_rx_credit_latch, f->vc);
     _inject_rx_latch.pop();
   }
@@ -235,7 +232,7 @@ void InjectController::Evaluate() {
     Flit *f = _eject_rx_req_latch.front();
     if(_rc_buf_occ + f->size < _rc_buf_size) {
       assert(f->vc == gOutboundReqVC);
-      if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundReqVC);
+      returnCredit(_eject_rx_credit_latch, gOutboundReqVC);
       _eject_rx_req_latch.pop();
       _rc_buf_occ += f->size;
       f->type = Flit::OUTBOUND_RSP;
@@ -263,7 +260,7 @@ void InjectController::Evaluate() {
     assert(f->vc == gOutboundRspVC);
     _outbound_buffer.allow_pkt(f->pid);
     if (f->watch) *gWatchOut << GetSimTime() << " | " << FullName() << " | " << " Received RC RSP flit. |" << *f << endl;
-    if(f->src != _router->GetID()) returnCredit(_eject_rx_credit_latch, gOutboundRspVC);
+    returnCredit(_eject_rx_credit_latch, gOutboundRspVC);
     _eject_rx_rsp_latch.pop();
     f->Free();
   }

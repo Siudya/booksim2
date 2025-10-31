@@ -34,13 +34,13 @@ void ChipletP2P::_BuildNet( const Configuration &config )
   bundry_router_10 = get_node_id(1, y_len - 1, 0);
   bundry_router_11 = get_node_id(3, 0, x_len - 1);
 
-  node_conn_d2d(bundry_router_0, bundry_router_1, right_port, left_port, 32);
-  node_conn_d2d(bundry_router_2, bundry_router_3, down_port, up_port, 32);
-  node_conn_d2d(bundry_router_4, bundry_router_5, left_port, right_port, 32);
-  node_conn_d2d(bundry_router_6, bundry_router_7, up_port, down_port, 32);
+  node_conn_d2d(bundry_router_0, bundry_router_1, right_port, left_port);
+  node_conn_d2d(bundry_router_2, bundry_router_3, down_port, up_port);
+  node_conn_d2d(bundry_router_4, bundry_router_5, left_port, right_port);
+  node_conn_d2d(bundry_router_6, bundry_router_7, up_port, down_port);
 
-  node_conn_d2d(bundry_router_8, bundry_router_9, right_port, left_port, 32);
-  node_conn_d2d(bundry_router_10, bundry_router_11, left_port, right_port, 32);
+  node_conn_d2d(bundry_router_8, bundry_router_9, right_port, left_port);
+  node_conn_d2d(bundry_router_10, bundry_router_11, left_port, right_port);
 
   const int dummy_0 = get_node_id(0, y_len - 2, 0);
   const int dummy_1 = get_node_id(1, y_len - 2, x_len - 1);
@@ -56,13 +56,13 @@ void ChipletP2P::_BuildNet( const Configuration &config )
   const int dummy_10 = get_node_id(1, y_len - 1, x_len - 1);
   const int dummy_11 = get_node_id(3, 0, 0);
 
-  node_conn_d2d(dummy_0, dummy_1, left_port, right_port, 1);
-  node_conn_d2d(dummy_2, dummy_3, up_port, down_port, 1);
-  node_conn_d2d(dummy_4, dummy_5, right_port, left_port, 1);
-  node_conn_d2d(dummy_6, dummy_7, down_port, up_port, 1);
+  node_conn_d2d(dummy_0, dummy_1, left_port, right_port);
+  node_conn_d2d(dummy_2, dummy_3, up_port, down_port);
+  node_conn_d2d(dummy_4, dummy_5, right_port, left_port);
+  node_conn_d2d(dummy_6, dummy_7, down_port, up_port);
 
-  node_conn_d2d(dummy_8, dummy_9, left_port, right_port, 1);
-  node_conn_d2d(dummy_10, dummy_11, right_port, left_port, 1);
+  node_conn_d2d(dummy_8, dummy_9, left_port, right_port);
+  node_conn_d2d(dummy_10, dummy_11, right_port, left_port);
 
   vector<int> brs = {
     bundry_router_0,

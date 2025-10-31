@@ -61,7 +61,7 @@ std::unique_ptr<Network> Network::New(const Configuration & config, const string
   if ( topo == "torus" ) {
     KNCube::RegisterRoutingFunctions() ;
     n = std::make_unique<KNCube>( config, name, false );
-  } else if ( topo == "mesh" ) {
+  } else if ( topo == "soc_mesh" ) {
     KNCube::RegisterRoutingFunctions() ;
     n = std::make_unique<KNCube>( config, name, true );
   } else if ( topo == "chiplet_twin" ) {

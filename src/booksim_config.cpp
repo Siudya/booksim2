@@ -140,6 +140,8 @@ BookSimConfig::BookSimConfig( )
   _int_map["st_prepare_delay"] = 0;
   _int_map["st_final_delay"]   = 1;
 
+  _int_map["d2d_latency"]      = 32;
+
   //==== Event-driven =====================================
 
   _int_map["vct"] = 0; 

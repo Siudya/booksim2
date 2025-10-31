@@ -3,7 +3,10 @@
 #include <sstream>
 #include "inject_controller.hpp"
 
-ChipletNetwork::ChipletNetwork (const Configuration &config, const string & name):Network( config, name ) {}
+ChipletNetwork::ChipletNetwork (const Configuration &config, const string & name):Network( config, name ) {
+  _d2d_lat = config.GetInt("d2d_latency");
+  _num_vcs = config.GetInt("num_vcs");
+}
 
 int ChipletNetwork::left_node(int node_id) {
   int self_chip = get_chip(node_id);
@@ -51,7 +54,7 @@ void ChipletNetwork::node_conn(int node, int in_chn, int out_chn, int in_lat, in
   _chan_cred[out_chn]->SetLatency( out_lat );
 }
 
-void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int lat) {
+void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port) {
 
   auto r0 = _routers.at(n0).get();
   auto r1 = _routers.at(n1).get();
@@ -59,13 +62,13 @@ void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port, int
   r0->AlterInputChannel(n0_port, r1->GetOutputChannel(n1_port), r1->GetOutputCreditChannel(n1_port), true);
   r1->AlterInputChannel(n1_port, r0->GetOutputChannel(n0_port), r0->GetOutputCreditChannel(n0_port), true);
 
-  r0->GetOutputChannel(n0_port)->SetLatency(lat);
-  r1->GetOutputChannel(n1_port)->SetLatency(lat);
-  r0->GetOutputCreditChannel(n0_port)->SetLatency(lat);
-  r1->GetOutputCreditChannel(n1_port)->SetLatency(lat);
+  r0->GetOutputChannel(n0_port)->SetLatency(_d2d_lat);
+  r1->GetOutputChannel(n1_port)->SetLatency(_d2d_lat);
+  r0->GetOutputCreditChannel(n0_port)->SetLatency(_d2d_lat);
+  r1->GetOutputCreditChannel(n1_port)->SetLatency(_d2d_lat);
 
-  r0->SetBufferSize(n0_port, lat * 2 + 1);
-  r1->SetBufferSize(n1_port, lat * 2 + 1);
+  r0->SetBufferSize(n0_port, _d2d_lat * 2 + 1);
+  r1->SetBufferSize(n1_port, _d2d_lat * 2 + 1);
 }
 
 void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {
