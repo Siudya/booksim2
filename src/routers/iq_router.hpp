@@ -179,7 +179,7 @@ public:
 
   SwitchMonitor const * const GetSwitchMonitor() const {return _switchMonitor;}
   BufferMonitor const * const GetBufferMonitor() const {return _bufferMonitor;}
-
+  void SetWaitForTail(int port, bool val);
 };
 
 #endif

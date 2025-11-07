@@ -186,6 +186,11 @@ void IQRouter::SetBufferSize(int port, int size)
   _next_buf[port]->SetSize(size);
 }
 
+void IQRouter::SetWaitForTail(int port, bool val)
+{
+  _next_buf[port]->SetWaitForTail(val);
+}
+
 IQRouter::~IQRouter( )
 {
 

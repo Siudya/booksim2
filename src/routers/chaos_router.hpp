@@ -129,6 +129,7 @@ public:
   void SetBufferSize(int port, int size);
 
   void Display( ostream & os = cout ) const;
+  void SetWaitForTail(int port, bool val) {}
 };
 
 #endif

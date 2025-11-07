@@ -228,6 +228,10 @@ public:
     assert((vc >= 0) && (vc < _vcs));
     return _vc_occupancy[vc];
   }
+
+  inline void SetWaitForTail(bool wft) {
+    _wait_for_tail_credit = wft;
+  }
   
 #ifdef TRACK_BUFFERS
   inline int OccupancyForClass(int c) const {

@@ -10,3 +10,5 @@ build
 *.out
 *.svg
 csv_data
+logs
+csv

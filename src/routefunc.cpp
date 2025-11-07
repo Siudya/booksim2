@@ -255,8 +255,12 @@ void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_beg
   vc_sel_begin = vc_begin;
   vc_sel_end = vc_end;
   const bool about_to_leave_chiplet = out_port == r->GetD2DPort() && r->IsBoundaryRouter();
+  const bool from_vn0 = f->vc >= vn0_begin && f->vc <= vn0_end;
   if(r->CheckOutputMayBeDeadlock(out_port)) {
-    if(f->traffic_type == Flit::INBOUND && f->deterministic) {
+    if(f->traffic_type == Flit::LOCAL || f->traffic_type == Flit::TRANSIT) {
+      vc_sel_begin = from_vn0 ? vn0_begin : vn0_end;
+      vc_sel_end = from_vn0 ? vn1_begin : vn1_end;
+    } else if(f->traffic_type == Flit::INBOUND) {
       vc_sel_begin = vn0_begin;
       vc_sel_end = vn0_end;
     } else if(f->traffic_type == Flit::OUTBOUND && !about_to_leave_chiplet) {
@@ -269,6 +273,30 @@ void va_mvn(const Router *r, const Flit *f, const int out_port, const int vc_beg
 void va_rc(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
   vc_sel_begin = vc_begin;
   vc_sel_end = vc_end;
+}
+
+void va_vcs(const Router *r, const Flit *f, const int out_port, const int vc_begin, const int vc_end, int &vc_sel_begin, int &vc_sel_end) {
+  int vc_num = (vc_end - vc_begin + 1);
+  assert(vc_num % 2 == 0);
+  int vn0_begin = vc_begin;
+  int vn0_end = vc_num / 2 + vc_begin - 1;  // vn0_end is the last VC of vn0
+  int vn1_begin = vn0_end + 1;
+  int vn1_end = vc_end;
+  vc_sel_begin = vc_begin;
+  vc_sel_end = vc_end;
+  const bool about_to_leave_chiplet = out_port == r->GetD2DPort() && r->IsBoundaryRouter();
+  const bool from_vn0 = f->vc >= vn0_begin && f->vc <= vn0_end;
+  if(f->traffic_type == Flit::LOCAL || f->traffic_type == Flit::TRANSIT) {
+    vc_sel_begin = from_vn0 ? vn0_begin : vn0_end;
+    vc_sel_end = from_vn0 ? vn1_begin : vn1_end;
+  } else if(f->traffic_type == Flit::INBOUND) {
+    vc_sel_begin = vn0_begin;
+    vc_sel_end = vn0_end;
+  } else if(f->traffic_type == Flit::OUTBOUND && !about_to_leave_chiplet) {
+    vc_sel_begin = vn1_begin;
+    vc_sel_end = vn1_end;
+  }
+
 }
 
 template<va_strategy_func VAStrategy>
@@ -390,5 +418,8 @@ void InitializeRoutingMap( const Configuration & config )
   gRoutingFunctionMap["dor_rc_chiplet_twin"] = &dor_chiplet<va_rc>;
   gRoutingFunctionMap["dor_rc_chiplet_mesh"] = &dor_chiplet<va_rc>;
   gRoutingFunctionMap["dor_rc_chiplet_p2p"] = &dor_chiplet<va_rc>;
+  gRoutingFunctionMap["dor_vcs_chiplet_twin"] = &dor_chiplet<va_vcs>;
+  gRoutingFunctionMap["dor_vcs_chiplet_mesh"] = &dor_chiplet<va_vcs>;
+  gRoutingFunctionMap["dor_vcs_chiplet_p2p"] = &dor_chiplet<va_vcs>;
   // ===================================================
 }

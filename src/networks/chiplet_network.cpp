@@ -69,6 +69,8 @@ void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port) {
 
   r0->SetBufferSize(n0_port, _d2d_lat * 2 + 1);
   r1->SetBufferSize(n1_port, _d2d_lat * 2 + 1);
+  r0->SetWaitForTail(n0_port, false);
+  r1->SetWaitForTail(n1_port, false);
 }
 
 void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {

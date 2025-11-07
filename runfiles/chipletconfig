@@ -67,8 +67,11 @@ sample_period = 100000;
 
 max_samples = 10;
 
-packet_size = {2};
-packet_size_rate = {1};
+packet_size = {1,4};
+packet_size_rate = {1,1};
+injection_rate_uses_flits = 1;
+traffic = uniform;
+classes = 1;
 //seed = time;
 
 sim_count          = 1;
@@ -85,8 +88,6 @@ n  = 2;
 routing_function = dor_vda;
 
 use_read_write = 0;
-
-traffic       = uniform;
 
 injection_rate = 0.007;
 

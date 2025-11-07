@@ -233,6 +233,7 @@ public:
 
   inline int NumInputs() const {return _inputs;}
   inline int NumOutputs() const {return _outputs;}
+  virtual void SetWaitForTail(int port, bool val) = 0;
 };
 
 #endif

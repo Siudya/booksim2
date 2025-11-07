@@ -79,59 +79,65 @@ task("bs2")
         usage = "xmake bs2 <config_file>",
         description = "Run BookSim simulator with specified config file",
         options = {
-            {'d', "--deterministic", "k", nil, "Deterministic"},
-            {'C', "--config-file", "kv", "chiplet", "Config file name (without path and extension)"},
-            {'R', "--rc-function", "kv", "dor", "Routing computation function (dor)"},
-            {'A', "--va-function", "kv", "vda", "VC alloc function (vda, red, mvn, rc)"},
-            {'t', "--topology", "kv", "twin", "Topology (twin, mesh, p2p)"},
-            {'T', "--traffic", "kv", "uniform", "Traffic types (uniform, bitcomp, transpose, bitrev, shuffle, background, diagonal, asymmetric, taper64, bad_dragon, tornado, neighbor, hotspot)"},
-            {'I', "--injection-rate", "kv", "0.001", "Injection rate"},
-            {'W', "--watch-out", "kv", "", "Watch out file name (without path and extension)"},
-            {'X', "--watch-flits", "kv", "", "Watch flits name"},
-            {'L', "--latency-threshold", "kv", "512.0", "Latency threshold"},
-            {'S', "--inject-rate-step", "kv", "", "Sim from --injection-rate by --inject-rate-step until booksim return non-zero value"}
+            {'d', "deterministic", "k", nil, "Deterministic"},
+            {'C', "config-file", "kv", "chiplet", "Config file name (without path and extension)"},
+            {'R', "rc-function", "kv", "dor", "Routing computation function (dor)"},
+            {'A', "va-function", "kv", "vda", "VC alloc function (vda, red, mvn, rc)"},
+            {'t', "topology", "kv", "twin", "Topology (twin, mesh, p2p)"},
+            {'T', "traffic", "kv", "uniform", "Traffic type (uniform, bitcomp, shuffle)"},
+            {'I', "injection-rate", "kv", "0.001", "Injection rate"},
+            {'W', "watch-out", "kv", "", "Watch out file name (without path and extension)"},
+            {'X', "watch-flits", "kv", "", "Watch flits name"},
+            {'L', "latency-threshold", "kv", "512.0", "Latency threshold"},
+            {'S', "inject-rate-step", "kv", "", "Sim from --injection-rate by --inject-rate-step until booksim return non-zero value"}
         }
     }
     on_run(function (options)
         import("core.base.option")
         local bin = path.join(os.projectdir(), "build", "linux", "x86_64", "release", "booksim")
-        local config_file = path.join(os.projectdir(), "runfiles", option.get("--config-file") .. "config")
+        local config_file = path.join(os.projectdir(), "runfiles", option.get("config-file") .. "config")
         local opts = {config_file}
-        if option.get("--deterministic") then table.join2(opts, { "deterministic=1" }) end
-        table.join2(opts, { "topology=" .. option.get("--config-file") .. "_" .. option.get("--topology") })
-        table.join2(opts, { "traffic=" .. option.get("--traffic") })
+        if option.get("deterministic") then table.join2(opts, { "deterministic=1" }) end
+        table.join2(opts, { "topology=" .. option.get("config-file") .. "_" .. option.get("topology") })
         
-        if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_out=" .. option.get("--watch-out") }) end
-        if option.get("--watch-out") ~= "" then table.join2(opts, { "watch_flits=" .. option.get("--watch-flits") }) end
-        if option.get("--va-function") == "rc" then table.join2(opts, { "use_rc_buffer=1", "num_vcs=4" }) end
-        table.join2(opts, { "routing_function=" .. option.get("--rc-function") .. "_" .. option.get("--va-function") })
-        table.join2(opts, { "latency_thres=" .. option.get("--latency-threshold") })
+        if option.get("watch-out") ~= "" then table.join2(opts, { "watch_out=" .. option.get("watch-out") }) end
+        if option.get("watch-out") ~= "" then table.join2(opts, { "watch_flits=" .. option.get("watch-flits") }) end
+        if option.get("va-function") == "rc" then table.join2(opts, { "use_rc_buffer=1", "num_vcs=4" }) end
+        if option.get("va-function") == "vda" or option.get("va-function") == "red" then table.join2(opts, { "wait_for_tail_credit=1"}) end
+        table.join2(opts, { "routing_function=" .. option.get("rc-function") .. "_" .. option.get("va-function") })
+        table.join2(opts, { "latency_thres=" .. option.get("latency-threshold") })
+        table.join2(opts, { "traffic=" .. option.get("traffic") })
 
-        local log_file = option.get("--topology")
-        log_file = log_file .. "_" .. option.get("--traffic")
-        log_file = log_file .. "_" .. option.get("--va-function")
-        if option.get("--deterministic") then 
-            log_file = log_file .. "_ord"
+        local log_file = ""
+        if option.get("deterministic") then 
+            log_file = "ord"
         else
-            log_file = log_file .. "_rnd"
+            log_file = "rnd"
         end
         local log_dir = path.join(os.projectdir(), "logs")
         if not os.exists(log_dir) then os.mkdir(log_dir) end
+        local tfc_dir = path.join(log_dir, option.get("traffic"))
+        if not os.exists(tfc_dir) then os.mkdir(tfc_dir) end
+        local topo_dir = path.join(tfc_dir, option.get("topology"))
+        if not os.exists(topo_dir) then os.mkdir(topo_dir) end
+        local va_dir = path.join(topo_dir, option.get("va-function"))
+        if not os.exists(va_dir) then os.mkdir(va_dir) end
 
         local iter_count = 0
         local step = 0.0
-        if option.get("--inject-rate-step") ~= "" then
+        if option.get("inject-rate-step") ~= "" then
             iter_count = 1000
-            step = tonumber(option.get("--inject-rate-step"))
+            step = tonumber(option.get("inject-rate-step"))
         end
 
         for i = 0,iter_count,1 do
-            local iter_inj_rate = tonumber(option.get("--injection-rate")) + step * i
+            local iter_inj_rate = tonumber(option.get("injection-rate")) + step * i
             local iter_log = log_file .. "_" .. iter_inj_rate .. ".log"
             local iter_opts = {}
             table.join2(iter_opts, opts)
             table.join2(iter_opts, { "injection_rate=" .. iter_inj_rate })
             print("%s %s", bin, table.concat(iter_opts, " "))
-            os.execv(bin, iter_opts, {stdout = path.join(log_dir, iter_log)})
+            print(path.join(va_dir, iter_log))
+            os.execv(bin, iter_opts, {stdout = path.join(va_dir, iter_log)})
         end
     end)
