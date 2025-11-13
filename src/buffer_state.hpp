@@ -162,6 +162,7 @@ class BufferState : public Module {
   int  _occupancy;
   vector<int> _vc_occupancy;
   int  _vcs;
+  bool _noc_buffer;
   
   unique_ptr<BufferPolicy>  _buffer_policy;
   
@@ -177,6 +178,13 @@ class BufferState : public Module {
 #endif
 
 public:
+  static vector<BufferState *> noc_buffer_states;
+  static long long noc_occupancy_sum;
+  static long long noc_size_sum;
+  static long long cycles;
+  static void step();
+  static void init();
+  static double utilization();
 
   BufferState( const Configuration& config, 
 	       Module *parent, const string& name );
@@ -231,6 +239,10 @@ public:
 
   inline void SetWaitForTail(bool wft) {
     _wait_for_tail_credit = wft;
+  }
+
+  inline void SetNoCBuffer(bool noc) {
+    _noc_buffer = noc;
   }
   
 #ifdef TRACK_BUFFERS

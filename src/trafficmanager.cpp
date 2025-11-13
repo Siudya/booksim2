@@ -34,6 +34,7 @@
 
 #include "booksim.hpp"
 #include "booksim_config.hpp"
+#include "buffer_state.hpp"
 #include "trafficmanager.hpp"
 #include "batchtrafficmanager.hpp"
 #include "random_utils.hpp" 
@@ -252,6 +253,7 @@ TrafficManager::TrafficManager( const Configuration &config, const vector<Networ
             int router_latency = config.GetInt("routing_delay") + (config.GetInt("speculative") ? max(vc_alloc_delay, sw_alloc_delay) : (vc_alloc_delay + sw_alloc_delay));
             int min_latency = 1 + _net[subnet]->GetInject(source)->GetLatency() + router_latency + _net[subnet]->GetInjectCred(source)->GetLatency();
             bs->SetMinLatency(min_latency);
+            bs->SetNoCBuffer(false);
             _buf_states[source][subnet] = bs;
             _last_vc[source][subnet].resize(_classes, -1);
         }
@@ -502,6 +504,8 @@ TrafficManager::TrafficManager( const Configuration &config, const vector<Networ
     _overall_min_accepted.resize(_classes, 0.0);
     _overall_avg_accepted.resize(_classes, 0.0);
     _overall_max_accepted.resize(_classes, 0.0);
+
+    BufferState::init();
 
 #ifdef TRACK_STALLS
     _buffer_busy_stalls.resize(_classes);
@@ -1301,7 +1305,7 @@ void TrafficManager::_Step( )
     if(gTrace){
         cout<<"TIME "<<_time<<endl;
     }
-
+    BufferState::step();
 }
   
 bool TrafficManager::_PacketsOutstanding( ) const
@@ -1544,6 +1548,7 @@ bool TrafficManager::_SingleSim( )
             const double acc_latency = (double)_plat_stats[lat_exc_class]->Sum();
             const double acc_count = (double)_plat_stats[lat_exc_class]->NumSamples();
             cout << "Average latency " << (acc_latency / acc_count) << " for class " << lat_exc_class << " exceeded " << _latency_thres[lat_exc_class] << " cycles. Aborting simulation." << endl;
+            cout << "NoC utilization = " << BufferState::utilization() << endl;
             cout << "Flits causing latency timeout in class " << lat_exc_class << ":" << endl;
             map<int, Flit *>::const_iterator iter;
             int count = 0;
@@ -2164,6 +2169,9 @@ void TrafficManager::DisplayOverallStats( ostream & os ) const {
            << " (" << _total_sims << " samples)" << endl;
         os << "\tmaximum = " << _overall_max_plat[c] / (double)_total_sims
            << " (" << _total_sims << " samples)" << endl;
+
+        
+        os << "NoC utilization = " << BufferState::utilization() << endl;
 
         os << "Network latency average = " << _overall_avg_nlat[c] / (double)_total_sims
            << " (" << _total_sims << " samples)" << endl;

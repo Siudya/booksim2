@@ -556,6 +556,8 @@ BufferState::BufferState( const Configuration& config, Module *parent, const str
 
   _last_id.resize(_vcs, -1);
   _last_pid.resize(_vcs, -1);
+  BufferState::noc_buffer_states.push_back(this);
+  _noc_buffer = true;
 
 #ifdef TRACK_BUFFERS
   _classes = config.GetInt("classes");
@@ -668,4 +670,31 @@ void BufferState::Display( ostream & os ) const
        << ", tail_sent = " << _tail_sent[v]
        << ", occupied = " << _vc_occupancy[v] << endl;
   }
+}
+
+void BufferState::step() {
+  for(auto buf : noc_buffer_states) {
+    if(buf->_noc_buffer) {
+      auto occ = buf->_vc_occupancy[0] + buf->_vc_occupancy[1];
+      BufferState::noc_occupancy_sum += occ;
+      BufferState::cycles ++;
+    }
+  }
+}
+long long BufferState::cycles = 0;
+long long BufferState::noc_occupancy_sum = 0;
+long long BufferState::noc_size_sum = 0;
+vector<BufferState *> BufferState::noc_buffer_states;
+
+void BufferState::init() {
+  for(auto buf : BufferState::noc_buffer_states) {
+    if(buf->_noc_buffer) {
+      auto size = buf->_size * 2 / buf->_vcs;
+      BufferState::noc_size_sum += size;
+    }
+  }     
+}
+
+double BufferState::utilization() {
+  return (double)BufferState::noc_occupancy_sum / (double)BufferState::noc_size_sum / (double)BufferState::cycles;
 }

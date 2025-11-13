@@ -127,6 +127,7 @@ public:
   virtual vector<int> MaxCredits() const { return vector<int>(); }
 
   void SetBufferSize(int port, int size);
+  void SetBufferStatistics(int port, bool val){}
 
   void Display( ostream & os = cout ) const;
   void SetWaitForTail(int port, bool val) {}

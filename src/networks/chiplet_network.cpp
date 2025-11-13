@@ -71,6 +71,8 @@ void ChipletNetwork::node_conn_d2d(int n0, int n1, int n0_port, int n1_port) {
   r1->SetBufferSize(n1_port, _d2d_lat * 2 + 1);
   r0->SetWaitForTail(n0_port, false);
   r1->SetWaitForTail(n1_port, false);
+  r0->SetBufferStatistics(n0_port, false);
+  r1->SetBufferStatistics(n1_port, false);
 }
 
 void ChipletNetwork::setup_deadlock_channels_mono_dir(int br0, int br1) {
@@ -222,6 +224,7 @@ void ChipletNetwork::single_chip_conn(const Configuration &config, int chip_id) 
       _routers[i]->AddOutputChannel( _eject[i].get(), _eject_cred[i].get() );
       _inject[i]->SetLatency( 1 );
       _eject[i]->SetLatency( 1 );
+      _routers[i]->SetBufferStatistics(local_port, false);
     }
   }
 }
