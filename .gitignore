@@ -12,3 +12,5 @@ build
 csv_data
 logs
 csv
+*.pdf
+*.pyc
