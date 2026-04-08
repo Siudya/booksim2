@@ -31,27 +31,38 @@ SERIES_COLORS = [
 ]
 SERIES_MARKERS = ["circle", "square", "triangle", "diamond", "cross", "plus"]
 Y_AXIS_MAX = 200.0
-CHART_WIDTH = 280
-CHART_HEIGHT = 360
-ROW_GAP = 64
-COL_GAP = 18
-FIGURE_PADDING_TOP = 36
-FIGURE_PADDING_RIGHT = 28
-FIGURE_PADDING_BOTTOM = 96
-ROW_LABEL_WIDTH = 60
-PLOT_LEFT = 62
-PLOT_RIGHT = 18
-PLOT_TOP = 38
-PLOT_BOTTOM = 96
+CHART_WIDTH = 240
+CHART_HEIGHT = 312
+ROW_GAP = 44
+COL_GAP = 8
+FIGURE_PADDING_TOP = 20
+FIGURE_PADDING_RIGHT = 18
+FIGURE_PADDING_BOTTOM = 80
+ROW_LABEL_WIDTH = 56
+PLOT_LEFT = 58
+PLOT_RIGHT = 14
+PLOT_TOP = 32
+PLOT_BOTTOM = 100
+ROW_LABEL_OFFSET = 24
 MARKER_SIZE = 4.5
 FONT_FAMILY = "Arial, Helvetica, sans-serif"
-AXIS_TITLE_FONT_SIZE = 14
-SUBPLOT_TAG_FONT_SIZE = 16
-LEGEND_FONT_SIZE = 16
+TITLE_FONT_SIZE = 18
+TICK_LABEL_FONT_SIZE = 12
+AXIS_TITLE_FONT_SIZE = 16
+SUBPLOT_TAG_FONT_SIZE = 18
+ROW_LABEL_FONT_SIZE = 18
+LEGEND_FONT_SIZE = 18
+TITLE_BASELINE_OFFSET = 24.0
+Y_TICK_LABEL_BASELINE_ADJUST = 4.5
+X_TICK_LABEL_OFFSET = 22.0
+X_TITLE_OFFSET = 46.0
+X_TITLE_LINE_HEIGHT = 18.0
+SUBPLOT_TAG_BASELINE_OFFSET = 12.0
 LEGEND_MARKER_SIZE = 6.0
 LEGEND_LINE_LENGTH = 28.0
 LEGEND_TEXT_GAP = 10.0
 LEGEND_ENTRY_GAP = 24.0
+LEGEND_BASELINE_OFFSET = 30.0
 PDF_BASE_SCALE = 0.75
 PDF_MAX_DIMENSION = 800.0
 PDF_COMPRESS_LEVEL = 9
@@ -787,7 +798,7 @@ def render_chart(
         f'<rect x="{left:.2f}" y="{top:.2f}" width="{CHART_WIDTH:.2f}" height="{CHART_HEIGHT:.2f}" fill="#ffffff" stroke="#d9d9d9" stroke-width="1" />'
     )
     elements.append(
-        f'<text x="{left + CHART_WIDTH / 2:.2f}" y="{top + 22:.2f}" text-anchor="middle" font-size="16" font-weight="bold" fill="#222">{escape(title)}</text>'
+        f'<text x="{left + CHART_WIDTH / 2:.2f}" y="{top + TITLE_BASELINE_OFFSET:.2f}" text-anchor="middle" font-size="{TITLE_FONT_SIZE}" font-weight="bold" fill="#222">{escape(title)}</text>'
     )
 
     for tick in y_ticks:
@@ -799,7 +810,7 @@ def render_chart(
             f'<line x1="{plot_x - 5:.2f}" y1="{tick_y:.2f}" x2="{plot_x:.2f}" y2="{tick_y:.2f}" stroke="#333" stroke-width="1" />'
         )
         elements.append(
-            f'<text x="{plot_x - 8:.2f}" y="{tick_y + 4:.2f}" text-anchor="end" font-size="11" fill="#444">{escape(format_number(tick))}</text>'
+            f'<text x="{plot_x - 8:.2f}" y="{tick_y + Y_TICK_LABEL_BASELINE_ADJUST:.2f}" text-anchor="end" font-size="{TICK_LABEL_FONT_SIZE}" fill="#444">{escape(format_number(tick))}</text>'
         )
 
     x_ticks = select_ticks(chart.x_values, 6)
@@ -809,7 +820,7 @@ def render_chart(
             f'<line x1="{tick_x:.2f}" y1="{plot_y + plot_height:.2f}" x2="{tick_x:.2f}" y2="{plot_y + plot_height + 5:.2f}" stroke="#333" stroke-width="1" />'
         )
         elements.append(
-            f'<text x="{tick_x:.2f}" y="{plot_y + plot_height + 20:.2f}" text-anchor="middle" font-size="11" fill="#444">{escape(format_number(tick))}</text>'
+            f'<text x="{tick_x:.2f}" y="{plot_y + plot_height + X_TICK_LABEL_OFFSET:.2f}" text-anchor="middle" font-size="{TICK_LABEL_FONT_SIZE}" fill="#444">{escape(format_number(tick))}</text>'
         )
 
     elements.append(
@@ -821,13 +832,13 @@ def render_chart(
     elements.append(
         f'<text x="{left + 18:.2f}" y="{plot_y + plot_height / 2:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222" transform="rotate(-90 {left + 18:.2f} {plot_y + plot_height / 2:.2f})">Average Packet Latency (cycle)</text>'
     )
-    x_title_start_y = plot_y + plot_height + 40
+    x_title_start_y = plot_y + plot_height + X_TITLE_OFFSET
     for line_index, line in enumerate(x_title_lines):
         elements.append(
-            f'<text x="{plot_x + plot_width / 2:.2f}" y="{x_title_start_y + line_index * 16:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222">{escape(line)}</text>'
+            f'<text x="{plot_x + plot_width / 2:.2f}" y="{x_title_start_y + line_index * X_TITLE_LINE_HEIGHT:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222">{escape(line)}</text>'
         )
     elements.append(
-        f'<text x="{plot_x + plot_width / 2:.2f}" y="{top + CHART_HEIGHT - 12:.2f}" text-anchor="middle" font-size="{SUBPLOT_TAG_FONT_SIZE}" font-weight="bold" fill="#222">{escape(tag)}</text>'
+        f'<text x="{plot_x + plot_width / 2:.2f}" y="{top + CHART_HEIGHT - SUBPLOT_TAG_BASELINE_OFFSET:.2f}" text-anchor="middle" font-size="{SUBPLOT_TAG_FONT_SIZE}" font-weight="bold" fill="#222">{escape(tag)}</text>'
     )
 
     elements.append(f'<g clip-path="url(#{clip_id})">')
@@ -873,9 +884,9 @@ def render_chart_pdf(
     canvas.rect(left, top, CHART_WIDTH, CHART_HEIGHT, fill="#ffffff", stroke="#d9d9d9", stroke_width=1.0)
     canvas.text(
         left + (CHART_WIDTH / 2.0),
-        top + 22.0,
+        top + TITLE_BASELINE_OFFSET,
         title,
-        font_size=16,
+        font_size=TITLE_FONT_SIZE,
         color="#222",
         anchor="middle",
         bold=True,
@@ -885,7 +896,14 @@ def render_chart_pdf(
         tick_y = map_y(tick, y_min, y_max, plot_y, plot_height)
         canvas.line(plot_x, tick_y, plot_x + plot_width, tick_y, color="#ececec", stroke_width=1.0)
         canvas.line(plot_x - 5.0, tick_y, plot_x, tick_y, color="#333", stroke_width=1.0)
-        canvas.text(plot_x - 8.0, tick_y + 4.0, format_number(tick), font_size=11, color="#444", anchor="end")
+        canvas.text(
+            plot_x - 8.0,
+            tick_y + Y_TICK_LABEL_BASELINE_ADJUST,
+            format_number(tick),
+            font_size=TICK_LABEL_FONT_SIZE,
+            color="#444",
+            anchor="end",
+        )
 
     x_ticks = select_ticks(chart.x_values, 6)
     for tick in x_ticks:
@@ -900,9 +918,9 @@ def render_chart_pdf(
         )
         canvas.text(
             tick_x,
-            plot_y + plot_height + 20.0,
+            plot_y + plot_height + X_TICK_LABEL_OFFSET,
             format_number(tick),
-            font_size=11,
+            font_size=TICK_LABEL_FONT_SIZE,
             color="#444",
             anchor="middle",
         )
@@ -926,11 +944,11 @@ def render_chart_pdf(
         rotation=90,
     )
 
-    x_title_start_y = plot_y + plot_height + 40.0
+    x_title_start_y = plot_y + plot_height + X_TITLE_OFFSET
     for line_index, line in enumerate(x_title_lines):
         canvas.text(
             plot_x + (plot_width / 2.0),
-            x_title_start_y + (line_index * 16.0),
+            x_title_start_y + (line_index * X_TITLE_LINE_HEIGHT),
             line,
             font_size=AXIS_TITLE_FONT_SIZE,
             color="#222",
@@ -938,7 +956,7 @@ def render_chart_pdf(
         )
     canvas.text(
         plot_x + (plot_width / 2.0),
-        top + CHART_HEIGHT - 12.0,
+        top + CHART_HEIGHT - SUBPLOT_TAG_BASELINE_OFFSET,
         tag,
         font_size=SUBPLOT_TAG_FONT_SIZE,
         color="#222",
@@ -1022,10 +1040,10 @@ def build_svg(
             )
             subplot_index += 1
         elements.append(
-            f'<text x="{ROW_LABEL_WIDTH + layout.grid_width / 2:.2f}" y="{row_top + CHART_HEIGHT + 28:.2f}" text-anchor="middle" font-size="16" font-weight="bold" fill="#222">{escape(row_label)}</text>'
+            f'<text x="{ROW_LABEL_WIDTH + layout.grid_width / 2:.2f}" y="{row_top + CHART_HEIGHT + ROW_LABEL_OFFSET:.2f}" text-anchor="middle" font-size="{ROW_LABEL_FONT_SIZE}" font-weight="bold" fill="#222">{escape(row_label)}</text>'
         )
 
-    render_legend_svg(elements, series_names, styles, width, height - 34)
+    render_legend_svg(elements, series_names, styles, width, height - LEGEND_BASELINE_OFFSET)
 
     if defs:
         elements.insert(4, f'<defs>{"".join(defs)}</defs>')
@@ -1109,15 +1127,15 @@ def build_pdf(
             subplot_index += 1
         canvas.text(
             ROW_LABEL_WIDTH + (layout.grid_width / 2.0),
-            row_top + CHART_HEIGHT + 28.0,
+            row_top + CHART_HEIGHT + ROW_LABEL_OFFSET,
             row_label,
-            font_size=16,
+            font_size=ROW_LABEL_FONT_SIZE,
             color="#222",
             anchor="middle",
             bold=True,
         )
 
-    render_legend_pdf(canvas, series_names, styles, layout.width, layout.height - 34.0)
+    render_legend_pdf(canvas, series_names, styles, layout.width, layout.height - LEGEND_BASELINE_OFFSET)
     return build_pdf_document(canvas.content_stream(), canvas.width, canvas.height)
 
 
