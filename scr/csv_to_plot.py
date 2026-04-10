@@ -32,37 +32,39 @@ SERIES_COLORS = [
 SERIES_MARKERS = ["circle", "square", "triangle", "diamond", "cross", "plus"]
 Y_AXIS_MAX = 200.0
 CHART_WIDTH = 240
-CHART_HEIGHT = 312
+CHART_HEIGHT = 250
 ROW_GAP = 44
 COL_GAP = 8
-FIGURE_PADDING_TOP = 20
-FIGURE_PADDING_RIGHT = 18
-FIGURE_PADDING_BOTTOM = 80
-ROW_LABEL_WIDTH = 56
-PLOT_LEFT = 58
+FIGURE_PADDING_TOP = 0
+FIGURE_PADDING_RIGHT = 0
+FIGURE_PADDING_BOTTOM = 150
+ROW_LABEL_WIDTH = 0
+PLOT_LEFT = 40
 PLOT_RIGHT = 14
 PLOT_TOP = 32
-PLOT_BOTTOM = 100
+PLOT_BOTTOM = 56
 ROW_LABEL_OFFSET = 24
 MARKER_SIZE = 4.5
 FONT_FAMILY = "Arial, Helvetica, sans-serif"
 TITLE_FONT_SIZE = 18
-TICK_LABEL_FONT_SIZE = 12
-AXIS_TITLE_FONT_SIZE = 16
+TICK_LABEL_FONT_SIZE = 14
+AXIS_TITLE_FONT_SIZE = 22
 SUBPLOT_TAG_FONT_SIZE = 18
 ROW_LABEL_FONT_SIZE = 18
-LEGEND_FONT_SIZE = 18
+LEGEND_FONT_SIZE = 22
 TITLE_BASELINE_OFFSET = 24.0
 Y_TICK_LABEL_BASELINE_ADJUST = 4.5
 X_TICK_LABEL_OFFSET = 22.0
 X_TITLE_OFFSET = 46.0
 X_TITLE_LINE_HEIGHT = 18.0
-SUBPLOT_TAG_BASELINE_OFFSET = 12.0
+SUBPLOT_TAG_BASELINE_OFFSET = 6.0
 LEGEND_MARKER_SIZE = 6.0
 LEGEND_LINE_LENGTH = 28.0
 LEGEND_TEXT_GAP = 10.0
 LEGEND_ENTRY_GAP = 24.0
-LEGEND_BASELINE_OFFSET = 30.0
+LEGEND_BASELINE_OFFSET = 90
+UNIFIED_AXIS_LABEL_OFFSET = 16.0
+UNIFIED_AXIS_LINE_HEIGHT = 30.0
 PDF_BASE_SCALE = 0.75
 PDF_MAX_DIMENSION = 800.0
 PDF_COMPRESS_LEVEL = 9
@@ -216,6 +218,20 @@ def map_y(value: float, y_min: float, y_max: float, plot_y: float, plot_height: 
     if math.isclose(y_min, y_max, rel_tol=0.0, abs_tol=1e-9):
         return plot_y + (plot_height / 2.0)
     return plot_y + plot_height - ((value - y_min) / (y_max - y_min)) * plot_height
+
+
+def filter_close_y_ticks(
+    y_ticks: list[int], y_min: float, y_max: float, plot_y: float, plot_height: float, min_gap: float = 15.0
+) -> list[int]:
+    """Remove lower-valued tick when two adjacent ticks are closer than min_gap pixels."""
+    if len(y_ticks) <= 1:
+        return y_ticks
+    result: list[int] = []
+    for tick in sorted(y_ticks, reverse=True):
+        py = map_y(tick, y_min, y_max, plot_y, plot_height)
+        if not result or abs(py - map_y(result[-1], y_min, y_max, plot_y, plot_height)) >= min_gap:
+            result.append(tick)
+    return sorted(result)
 
 
 def build_series_styles(series_names: list[str]) -> dict[str, SeriesStyle]:
@@ -787,7 +803,7 @@ def render_chart(
     x_max = max(chart.x_values)
     y_max = Y_AXIS_MAX
     y_min, y_ticks = build_y_axis(chart.y_min, y_max)
-    x_title_lines = wrap_text(chart.x_label, 28)
+    y_ticks = filter_close_y_ticks(y_ticks, y_min, y_max, plot_y, plot_height)
 
     title = TOPOLOGY_LABELS.get(chart.topo.lower(), humanize(chart.topo))
 
@@ -810,7 +826,7 @@ def render_chart(
             f'<line x1="{plot_x - 5:.2f}" y1="{tick_y:.2f}" x2="{plot_x:.2f}" y2="{tick_y:.2f}" stroke="#333" stroke-width="1" />'
         )
         elements.append(
-            f'<text x="{plot_x - 8:.2f}" y="{tick_y + Y_TICK_LABEL_BASELINE_ADJUST:.2f}" text-anchor="end" font-size="{TICK_LABEL_FONT_SIZE}" fill="#444">{escape(format_number(tick))}</text>'
+            f'<text x="{left + 8:.2f}" y="{tick_y + Y_TICK_LABEL_BASELINE_ADJUST:.2f}" text-anchor="start" font-size="{TICK_LABEL_FONT_SIZE}" fill="#444">{escape(format_number(tick))}</text>'
         )
 
     x_ticks = select_ticks(chart.x_values, 6)
@@ -829,14 +845,7 @@ def render_chart(
     elements.append(
         f'<line x1="{plot_x:.2f}" y1="{plot_y + plot_height:.2f}" x2="{plot_x + plot_width:.2f}" y2="{plot_y + plot_height:.2f}" stroke="#333" stroke-width="1.2" />'
     )
-    elements.append(
-        f'<text x="{left + 18:.2f}" y="{plot_y + plot_height / 2:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222" transform="rotate(-90 {left + 18:.2f} {plot_y + plot_height / 2:.2f})">Average Packet Latency (cycle)</text>'
-    )
-    x_title_start_y = plot_y + plot_height + X_TITLE_OFFSET
-    for line_index, line in enumerate(x_title_lines):
-        elements.append(
-            f'<text x="{plot_x + plot_width / 2:.2f}" y="{x_title_start_y + line_index * X_TITLE_LINE_HEIGHT:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222">{escape(line)}</text>'
-        )
+    
     elements.append(
         f'<text x="{plot_x + plot_width / 2:.2f}" y="{top + CHART_HEIGHT - SUBPLOT_TAG_BASELINE_OFFSET:.2f}" text-anchor="middle" font-size="{SUBPLOT_TAG_FONT_SIZE}" font-weight="bold" fill="#222">{escape(tag)}</text>'
     )
@@ -878,7 +887,7 @@ def render_chart_pdf(
     x_max = max(chart.x_values)
     y_max = Y_AXIS_MAX
     y_min, y_ticks = build_y_axis(chart.y_min, y_max)
-    x_title_lines = wrap_text(chart.x_label, 28)
+    y_ticks = filter_close_y_ticks(y_ticks, y_min, y_max, plot_y, plot_height)
     title = TOPOLOGY_LABELS.get(chart.topo.lower(), humanize(chart.topo))
 
     canvas.rect(left, top, CHART_WIDTH, CHART_HEIGHT, fill="#ffffff", stroke="#d9d9d9", stroke_width=1.0)
@@ -897,12 +906,12 @@ def render_chart_pdf(
         canvas.line(plot_x, tick_y, plot_x + plot_width, tick_y, color="#ececec", stroke_width=1.0)
         canvas.line(plot_x - 5.0, tick_y, plot_x, tick_y, color="#333", stroke_width=1.0)
         canvas.text(
-            plot_x - 8.0,
+            left + 8.0,
             tick_y + Y_TICK_LABEL_BASELINE_ADJUST,
             format_number(tick),
             font_size=TICK_LABEL_FONT_SIZE,
             color="#444",
-            anchor="end",
+            anchor="start",
         )
 
     x_ticks = select_ticks(chart.x_values, 6)
@@ -934,26 +943,7 @@ def render_chart_pdf(
         color="#333",
         stroke_width=1.2,
     )
-    canvas.text(
-        left + 18.0,
-        plot_y + (plot_height / 2.0),
-        "Average Packet Latency (cycle)",
-        font_size=AXIS_TITLE_FONT_SIZE,
-        color="#222",
-        anchor="middle",
-        rotation=90,
-    )
-
-    x_title_start_y = plot_y + plot_height + X_TITLE_OFFSET
-    for line_index, line in enumerate(x_title_lines):
-        canvas.text(
-            plot_x + (plot_width / 2.0),
-            x_title_start_y + (line_index * X_TITLE_LINE_HEIGHT),
-            line,
-            font_size=AXIS_TITLE_FONT_SIZE,
-            color="#222",
-            anchor="middle",
-        )
+    
     canvas.text(
         plot_x + (plot_width / 2.0),
         top + CHART_HEIGHT - SUBPLOT_TAG_BASELINE_OFFSET,
@@ -1044,6 +1034,15 @@ def build_svg(
         )
 
     render_legend_svg(elements, series_names, styles, width, height - LEGEND_BASELINE_OFFSET)
+
+    x_label = next((c.x_label for c in charts.values()), "")
+    label_y = height - UNIFIED_AXIS_LABEL_OFFSET - UNIFIED_AXIS_LINE_HEIGHT
+    elements.append(
+        f'<text x="{width / 2:.2f}" y="{label_y:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222">X-axis: {escape(x_label)}</text>'
+    )
+    elements.append(
+        f'<text x="{width / 2:.2f}" y="{label_y + UNIFIED_AXIS_LINE_HEIGHT:.2f}" text-anchor="middle" font-size="{AXIS_TITLE_FONT_SIZE}" fill="#222">Y-axis: Average Packet Latency (cycle)</text>'
+    )
 
     if defs:
         elements.insert(4, f'<defs>{"".join(defs)}</defs>')
@@ -1136,6 +1135,25 @@ def build_pdf(
         )
 
     render_legend_pdf(canvas, series_names, styles, layout.width, layout.height - LEGEND_BASELINE_OFFSET)
+
+    x_label = next((c.x_label for c in charts.values()), "")
+    label_y = layout.height - UNIFIED_AXIS_LABEL_OFFSET - UNIFIED_AXIS_LINE_HEIGHT
+    canvas.text(
+        layout.width / 2.0,
+        label_y,
+        f"X-axis: {x_label}",
+        font_size=AXIS_TITLE_FONT_SIZE,
+        color="#222",
+        anchor="middle",
+    )
+    canvas.text(
+        layout.width / 2.0,
+        label_y + UNIFIED_AXIS_LINE_HEIGHT,
+        "Y-axis: Average Packet Latency (cycle)",
+        font_size=AXIS_TITLE_FONT_SIZE,
+        color="#222",
+        anchor="middle",
+    )
     return build_pdf_document(canvas.content_stream(), canvas.width, canvas.height)
 
 
