@@ -30,6 +30,13 @@ SERIES_COLORS = [
     "#8c564b",
 ]
 SERIES_MARKERS = ["circle", "square", "triangle", "diamond", "cross", "plus"]
+SERIES_STYLE_MAP: dict[str, tuple[str, str]] = {
+    "ReD":    ("#1f77b4", "circle"),
+    "VDA":    ("#ff7f0e", "square"),
+    "RC":     ("#9467bd", "cross"),
+    "VNS":    ("#2ca02c", "triangle"),
+    "MinVNS": ("#d62728", "diamond"),
+}
 Y_AXIS_MAX = 200.0
 CHART_WIDTH = 240
 CHART_HEIGHT = 250
@@ -236,11 +243,15 @@ def filter_close_y_ticks(
 
 def build_series_styles(series_names: list[str]) -> dict[str, SeriesStyle]:
     styles: dict[str, SeriesStyle] = {}
-    for index, series_name in enumerate(series_names):
-        styles[series_name] = SeriesStyle(
-            color=SERIES_COLORS[index % len(SERIES_COLORS)],
-            marker=SERIES_MARKERS[index % len(SERIES_MARKERS)],
-        )
+    fallback_index = 0
+    for series_name in series_names:
+        if series_name in SERIES_STYLE_MAP:
+            color, marker = SERIES_STYLE_MAP[series_name]
+        else:
+            color = SERIES_COLORS[fallback_index % len(SERIES_COLORS)]
+            marker = SERIES_MARKERS[fallback_index % len(SERIES_MARKERS)]
+            fallback_index += 1
+        styles[series_name] = SeriesStyle(color=color, marker=marker)
     return styles
 
 
