@@ -88,25 +88,25 @@ def main() -> None:
         for i, series in enumerate(SERIES_NAMES):
             values = [data.get(topo, {}).get(series, 0.0) for topo in TOPOLOGY_ORDER]
             ax.bar(x + offsets[i], values, bar_width, label=series, color=SERIES_COLORS[series])
-        ax.set_title(traffic.capitalize(), fontsize=11, fontweight="bold")
+        ax.set_title(traffic.capitalize(), fontsize=14, fontweight="bold")
         ax.set_xticks(x)
-        ax.set_xticklabels(TOPOLOGY_ORDER, fontsize=9)
+        ax.set_xticklabels(TOPOLOGY_ORDER, fontsize=12)
         ax.set_ylim(0, y_max)
-        ax.tick_params(axis="y", labelsize=9)
+        ax.tick_params(axis="y", labelsize=12)
 
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(
         handles, labels,
         loc="lower center",
         ncol=n_bars,
-        fontsize=9,
+        fontsize=12,
         frameon=False,
         bbox_to_anchor=(0.5, 0.02),
     )
     fig.text(
         0.5, -0.02,
         "Average Buffer Utilization (\u00d70.00001)",
-        ha="center", va="top", fontsize=11,
+        ha="center", va="top", fontsize=14,
     )
 
     fig.tight_layout(rect=[0, 0.12, 1, 1])
