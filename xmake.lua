@@ -72,7 +72,9 @@ target("booksim")
     apply_common()
     add_deps("allocators", "arbiters", "routers", "networks", "power")
     add_files(path.join("src", "*.cpp"))
-    add_ldflags("-Wl,--start-group -lrouters -lnetworks -larbiters -lallocators -lpower -Wl,--end-group", {force = true})
+    if is_plat("linux") then
+        add_ldflags("-Wl,--start-group -lrouters -lnetworks -larbiters -lallocators -lpower -Wl,--end-group", {force = true})
+    end
 
 task("bs2")
     set_menu {
@@ -94,7 +96,7 @@ task("bs2")
     }
     on_run(function (options)
         import("core.base.option")
-        local bin = path.join(os.projectdir(), "build", "linux", "x86_64", "release", "booksim")
+        local bin = path.join(os.projectdir(), "build", os.host(), os.arch(), "release", "booksim")
         local config_file = path.join(os.projectdir(), "runfiles", option.get("config-file") .. "config")
         local opts = {config_file}
         if option.get("deterministic") then table.join2(opts, { "deterministic=1" }) end
