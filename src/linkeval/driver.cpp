@@ -148,8 +148,9 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
   long long limit = integer(opt, "max-cycles");
   uint64_t cycles = 0;
   for (; !replay.drained(); ++cycles) {
-    if (cycles >= uint64_t(limit) || cycles >= uint64_t(INT32_MAX - 256))
+    if (limit != 0 && cycles >= uint64_t(limit))
       throw std::runtime_error("trace watchdog: " + replay.progress());
+    require(cycles < uint64_t(INT32_MAX - 256), "BookSim 32-bit cycle counter exhausted");
     link_eval_time = int(cycles);
     replay.begin_cycle(cycles);
     fabric.begin();
@@ -225,7 +226,8 @@ void run_synthetic(BookSimConfig& config, const Options& opt, const std::string&
   std::map<int, int> live; // ID -> injection time; ordered IDs make oldest checks O(1).
   uint64_t cycle = 0;
   for (;; ++cycle) {
-    require(cycle < limit && cycle < uint64_t(INT32_MAX - 256), "synthetic cycle watchdog expired");
+    require(limit == 0 || cycle < limit, "synthetic cycle watchdog expired");
+    require(cycle < uint64_t(INT32_MAX - 256), "BookSim 32-bit cycle counter exhausted");
     link_eval_time = int(cycle);
     fabric.begin();
     for (unsigned n = 0; n < networks; ++n) {
