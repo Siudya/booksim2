@@ -147,9 +147,10 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
   std::vector<Flit*> pending(fabric.nodes * trace_sim::NetworkCount, nullptr);
   long long limit = integer(opt, "max-cycles");
   uint64_t cycles = 0;
+  trace_sim::SimulationTimer timer;
   for (; !replay.drained(); ++cycles) {
     if (limit != 0 && cycles >= uint64_t(limit))
-      throw std::runtime_error("trace watchdog: " + replay.progress());
+      throw std::runtime_error("trace watchdog: " + replay.progress() + " " + timer.progress(cycles));
     require(cycles < uint64_t(INT32_MAX - 256), "BookSim 32-bit cycle counter exhausted");
     link_eval_time = int(cycles);
     replay.begin_cycle(cycles);
@@ -175,7 +176,11 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
     }
     fabric.end();
     replay.end_cycle();
+    if ((cycles + 1) % 1000000 == 0)
+      std::cout << "cycle=" << cycles + 1 << ' ' << replay.progress() << ' '
+                << timer.progress(cycles + 1) << std::endl;
   }
+  const auto timing = timer.progress(cycles);
   require(scoreboard.records.empty(), "flits remain after region completion");
   // Quiet checking is deliberately excluded from cycles/end-to-end latency.
   for (unsigned i = 0; i < 128; ++i) {
@@ -187,7 +192,7 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
     fabric.end();
   }
   replay.write_result(result, cycles, 1);
-  std::cout << "PASS " << replay.progress() << " cycles=" << cycles << std::endl;
+  std::cout << "PASS " << replay.progress() << " cycles=" << cycles << ' ' << timing << std::endl;
 }
 
 void run_synthetic(BookSimConfig& config, const Options& opt, const std::string& result) {
