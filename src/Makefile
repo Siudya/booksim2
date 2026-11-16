@@ -31,6 +31,7 @@ INCPATH = -I. -Iarbiters -Iallocators -Irouters -Inetworks -Ipower
 CPPFLAGS += -Wall $(INCPATH) $(DEFINE)
 CPPFLAGS += -O3
 CPPFLAGS += -g
+CXXFLAGS += -std=c++17
 LFLAGS +=
 
 PROG := booksim
@@ -70,7 +71,7 @@ $(YACC_OBJS): $(YACC_SRCS)
 	$(CC) $(CPPFLAGS) -c $< -o $@
 
 %.o: %.cpp
-	$(CXX) $(CPPFLAGS) -MMD -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MMD -c $< -o $@
 
 clean:
 	rm -f $(YACC_SRCS) $(YACC_HDRS)

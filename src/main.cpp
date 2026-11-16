@@ -53,6 +53,10 @@
 #include "network.hpp"
 #include "injection.hpp"
 #include "power_module.hpp"
+#ifdef LINK_EVAL
+#include "linkeval/driver.hpp"
+#include <cstring>
+#endif
 
 
 
@@ -64,6 +68,9 @@
 TrafficManager * trafficManager = NULL;
 
 int GetSimTime() {
+#ifdef LINK_EVAL
+  if (link_eval_time >= 0) return link_eval_time;
+#endif
   return trafficManager->getTime();
 }
 
@@ -153,6 +160,9 @@ bool Simulate( BookSimConfig const & config )
 
 int main( int argc, char **argv )
 {
+#ifdef LINK_EVAL
+  if (argc > 1 && std::strcmp(argv[1], "--link-eval") == 0) return LinkEvalMain(argc - 1, argv + 1);
+#endif
 
   BookSimConfig config;
 

@@ -37,6 +37,9 @@
 #include <ctime>
 #include <cassert>
 #include "kncube.hpp"
+#include "../linkeval/ringlink.hpp"
+#include <algorithm>
+#include <stdexcept>
 #include "random_utils.hpp"
 #include "misc_utils.hpp"
  //#include "iq_router.hpp"
@@ -49,7 +52,42 @@ Network( config, name )
 
   _ComputeSize( config );
   _Alloc( );
+  const string link_type = config.GetStr("link_type");
+  if (link_type != "classic" && link_type != "ringlink-order" && link_type != "ringlink-ooo")
+    throw std::runtime_error("unsupported link_type: " + link_type);
+  if (link_type != "classic") {
+    if (!mesh || _n != 2 || config.GetInt("packet_size") != 1 ||
+        config.GetStr("buffer_policy") != "private")
+      throw std::runtime_error("RingLink needs a 2D mesh, private buffers and packet_size=1");
+    for (int node = 0; node < _size; ++node) {
+      for (int dim = 0; dim < _n; ++dim) {
+        int peer = _RightNode(node, dim);
+        int indices[2] = {_RightChannel(node, dim), _LeftChannel(peer, dim)};
+        auto ring = std::make_shared<RingLink>(this, "ring_" + std::to_string(indices[0]),
+            config.GetInt("num_vcs"), config.GetInt("vc_buf_size"),
+            std::max(0, config.GetInt("link_stage")), config.GetInt("link_input_reg"),
+            link_type == "ringlink-ooo");
+        for (int side = 0; side < 2; ++side) {
+          int i = indices[side];
+          auto* flit = new RingFlitChannel(this, "ring_flit_" + std::to_string(i), _classes, ring, side);
+          auto* credit = new RingCreditChannel(this, "ring_credit_" + std::to_string(i), ring, side);
+          std::replace(_timed_modules.begin(), _timed_modules.end(),
+                       static_cast<TimedModule*>(_chan[i]), static_cast<TimedModule*>(flit));
+          std::replace(_timed_modules.begin(), _timed_modules.end(),
+                       static_cast<TimedModule*>(_chan_cred[i]), static_cast<TimedModule*>(credit));
+          delete _chan[i]; delete _chan_cred[i];
+          _chan[i] = flit; _chan_cred[i] = credit;
+        }
+      }
+    }
+  }
   _BuildNet( config );
+  if (link_type == "classic" && config.GetInt("link_stage") >= 0) {
+    int forward = std::max(1, config.GetInt("link_stage") + config.GetInt("link_input_reg") + config.GetInt("link_output_reg"));
+    int backward = std::max(1, config.GetInt("link_stage") + config.GetInt("link_credit_reg"));
+    for (auto* c : _chan) c->SetLatency(forward);
+    for (auto* c : _chan_cred) c->SetLatency(backward);
+  }
 }
 
 void KNCube::_ComputeSize( const Configuration &config )

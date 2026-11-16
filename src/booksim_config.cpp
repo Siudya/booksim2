@@ -41,6 +41,13 @@ BookSimConfig::BookSimConfig( )
   // Network options
   //========================================================
 
+  // Link-Evaluation transport extensions (single-flit packets).
+  AddStrField("link_type", "classic");
+  _int_map["link_stage"] = -1; // -1 preserves upstream channel timing
+  _int_map["link_input_reg"] = 0;
+  _int_map["link_output_reg"] = 0;
+  _int_map["link_credit_reg"] = 0;
+
   // Channel length listing file
   AddStrField( "channel_file", "" ) ;
 
