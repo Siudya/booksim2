@@ -70,7 +70,7 @@ protected:
   int _delay;
   T * _input;
   T * _output;
-  queue<pair<int, T *> > _wait_queue;
+  queue<pair<SimTime, T *> > _wait_queue;
 
 };
 
@@ -111,8 +111,8 @@ void Channel<T>::WriteOutputs() {
   if(_wait_queue.empty()) {
     return;
   }
-  pair<int, T *> const & item = _wait_queue.front();
-  int const & time = item.first;
+  pair<SimTime, T *> const & item = _wait_queue.front();
+  SimTime const & time = item.first;
   if(GetSimTime() < time) {
     return;
   }

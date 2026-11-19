@@ -28,6 +28,7 @@
 #ifndef _STATS_HPP_
 #define _STATS_HPP_
 
+#include "booksim.hpp"
 #include "module.hpp"
 
 class Stats : public Module {
@@ -61,6 +62,10 @@ public:
   void AddSample( double val );
   inline void AddSample( int val ) {
     AddSample( (double)val );
+  }
+
+  inline void AddSample(SimTime val) {
+    AddSample(static_cast<double>(val));
   }
 
   int GetBin(int b){ return _hist[b];}

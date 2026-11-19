@@ -28,6 +28,7 @@
 #ifndef _BUFFER_MONITOR_HPP_
 #define _BUFFER_MONITOR_HPP_
 
+#include "booksim.hpp"
 #include <vector>
 #include <iostream>
 
@@ -36,7 +37,7 @@ using namespace std;
 class Flit;
 
 class BufferMonitor {
-  int  _cycles ;
+  SimTime _cycles ;
   int  _inputs ;
   int  _classes ;
   vector<int> _reads ;

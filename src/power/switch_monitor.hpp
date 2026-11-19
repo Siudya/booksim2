@@ -28,6 +28,7 @@
 #ifndef _SWITCH_MONITOR_HPP_
 #define _SWITCH_MONITOR_HPP_
 
+#include "booksim.hpp"
 #include <vector>
 #include <iostream>
 
@@ -36,7 +37,7 @@ using namespace std;
 class Flit;
 
 class SwitchMonitor {
-  int  _cycles ;
+  SimTime _cycles ;
   int  _inputs ;
   int  _outputs ;
   int  _classes ;

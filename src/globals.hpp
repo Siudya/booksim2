@@ -33,7 +33,9 @@
 
 /*all declared in main.cpp*/
 
-int GetSimTime();
+#include "booksim.hpp"
+
+SimTime GetSimTime();
 
 class Stats;
 Stats * GetStats(const std::string & name);

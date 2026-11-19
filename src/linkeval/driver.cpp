@@ -20,7 +20,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-int link_eval_time = -1;
+SimTime link_eval_time = -1;
 namespace {
 void require(bool ok, const std::string& why) {
   if (!ok) throw std::runtime_error(why);
@@ -151,8 +151,8 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
   for (; !replay.drained(); ++cycles) {
     if (limit != 0 && cycles >= uint64_t(limit))
       throw std::runtime_error("trace watchdog: " + replay.progress() + " " + timer.progress(cycles));
-    require(cycles < uint64_t(INT32_MAX - 256), "BookSim 32-bit cycle counter exhausted");
-    link_eval_time = int(cycles);
+    require(cycles < uint64_t(INT64_MAX - 256), "BookSim 64-bit cycle counter exhausted");
+    link_eval_time = SimTime(cycles);
     replay.begin_cycle(cycles);
     fabric.begin();
     for (unsigned n = 0; n < trace_sim::NetworkCount; ++n) {
@@ -176,7 +176,7 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
     }
     fabric.end();
     replay.end_cycle();
-    if ((cycles + 1) % 1000000 == 0)
+    if ((cycles + 1) % 10000000 == 0)
       std::cout << "cycle=" << cycles + 1 << ' ' << replay.progress() << ' '
                 << timer.progress(cycles + 1) << std::endl;
   }
@@ -184,7 +184,7 @@ void run_trace(BookSimConfig& config, const Options& opt, const std::string& res
   require(scoreboard.records.empty(), "flits remain after region completion");
   // Quiet checking is deliberately excluded from cycles/end-to-end latency.
   for (unsigned i = 0; i < 128; ++i) {
-    link_eval_time = int(cycles + i);
+    link_eval_time = SimTime(cycles + i);
     fabric.begin();
     for (unsigned n = 0; n < trace_sim::NetworkCount; ++n)
       for (int node = 0; node < fabric.nodes; ++node)
@@ -224,16 +224,16 @@ void run_synthetic(BookSimConfig& config, const Options& opt, const std::string&
     uint64_t injected = 0, ejected = 0, samples = 0, first = 0, last = 0;
     long double latency = 0;
     uint64_t max_latency = 0;
-    int stop = -1;
+    SimTime stop = -1;
   };
   std::vector<Stats> stats(networks);
   std::vector<Flit*> pending(networks * fabric.nodes, nullptr);
-  std::map<int, int> live; // ID -> injection time; ordered IDs make oldest checks O(1).
+  std::map<int, SimTime> live; // ID -> injection time; ordered IDs make oldest checks O(1).
   uint64_t cycle = 0;
   for (;; ++cycle) {
     require(limit == 0 || cycle < limit, "synthetic cycle watchdog expired");
-    require(cycle < uint64_t(INT32_MAX - 256), "BookSim 32-bit cycle counter exhausted");
-    link_eval_time = int(cycle);
+    require(cycle < uint64_t(INT64_MAX - 256), "BookSim 64-bit cycle counter exhausted");
+    link_eval_time = SimTime(cycle);
     fabric.begin();
     for (unsigned n = 0; n < networks; ++n) {
       auto& s = stats[n];
@@ -251,7 +251,7 @@ void run_synthetic(BookSimConfig& config, const Options& opt, const std::string&
           f->Free();
         }
       }
-      if (s.stop < 0 && s.samples == perf) s.stop = int(cycle);
+      if (s.stop < 0 && s.samples == perf) s.stop = SimTime(cycle);
       for (int node = 0; node < fabric.nodes; ++node) {
         auto& f = pending[n * fabric.nodes + node];
         if (!f && s.stop < 0 && inject(random)) {
@@ -260,7 +260,7 @@ void run_synthetic(BookSimConfig& config, const Options& opt, const std::string&
           if (dest != node) f = scoreboard.create(n, node, dest);
         }
         if (f && fabric.inject(n, node, f)) {
-          ++s.injected; live.emplace(f->id, int(cycle)); f = nullptr;
+          ++s.injected; live.emplace(f->id, SimTime(cycle)); f = nullptr;
         }
       }
       bool has_pending = std::any_of(pending.begin() + n * fabric.nodes,

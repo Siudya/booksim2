@@ -28,6 +28,7 @@
 #ifndef _BOOKSIM_HPP_
 #define _BOOKSIM_HPP_
 
+#include <cstdint>
 #include <string>
 #include <cstdlib>
 #include <cstring>
@@ -37,6 +38,9 @@
 #pragma warning (disable: 4786)
 #include <ostream>
 #endif
+
+// Signed timestamps retain the -1 sentinel used by pipeline event queues.
+using SimTime = std::int64_t;
 
 using namespace std;
 

@@ -93,7 +93,7 @@ private:
 
   // Statistics for Activity Factors
   vector<int> _active;
-  int _idle;
+  SimTime _idle;
 };
 
 #endif

@@ -67,7 +67,7 @@
  /* the current traffic manager instance */
 TrafficManager * trafficManager = NULL;
 
-int GetSimTime() {
+SimTime GetSimTime() {
 #ifdef LINK_EVAL
   if (link_eval_time >= 0) return link_eval_time;
 #endif
